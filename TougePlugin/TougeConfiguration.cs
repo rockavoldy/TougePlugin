@@ -59,4 +59,7 @@ public class TougeConfiguration : IValidateConfiguration<TougeConfigurationValid
 
     [YamlMember(Description = "Whether or not courser race (races with a defined finish line) are enabled.")]
     public bool EnableCourseRace = true;
+
+    [YamlMember(Description = "Whether other real players are ghosted (no collision) against the two racers during an active race. AI traffic still collides normally.")]
+    public bool GhostBystanderCollisions = true;
 }

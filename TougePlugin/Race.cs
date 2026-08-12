@@ -39,6 +39,9 @@ public class Race
 
     private bool IsGo = false;
 
+    private readonly List<EntryCar> _ghostedBystanders = [];
+    private bool _collisionsGhosted = false;
+
     private readonly IRaceType _raceType;
     private readonly Course _course;
 
@@ -171,6 +174,7 @@ public class Race
                     }
                     _ = SendTimedMessageAsync("Go!", true);
                     IsGo = true;
+                    EnableRaceCollisions();
                     break;
                 }
                 if (await WaitWithForfeitAsync(Task.Delay(1000)))
@@ -187,6 +191,64 @@ public class Race
         // General clean up
         Leader.Client!.Disconnecting -= OnClientDisconnected;
         Follower.Client!.Disconnecting -= OnClientDisconnected;
+        DisableRaceCollisions();
+    }
+
+    // Ghosts the two racers against every other real (non-AI) player currently on the server,
+    // so bystanders driving the same road can't disrupt the race. AI traffic is left untouched.
+    private void EnableRaceCollisions()
+    {
+        if (!Configuration.GhostBystanderCollisions || _collisionsGhosted)
+            return;
+
+        _collisionsGhosted = true;
+
+        var bystanders = _entryCarManager.EntryCars
+            .Where(car => car.Client != null && !car.AiControlled && car != Leader && car != Follower);
+
+        foreach (var bystander in bystanders)
+        {
+            GhostPair(bystander, false);
+            _ghostedBystanders.Add(bystander);
+        }
+
+        _entryCarManager.ClientConnected += OnBystanderConnected;
+    }
+
+    private void DisableRaceCollisions()
+    {
+        if (!_collisionsGhosted)
+            return;
+
+        _entryCarManager.ClientConnected -= OnBystanderConnected;
+
+        foreach (var bystander in _ghostedBystanders)
+        {
+            if (bystander.Client != null)
+                GhostPair(bystander, true);
+        }
+
+        _ghostedBystanders.Clear();
+        _collisionsGhosted = false;
+    }
+
+    private void OnBystanderConnected(ACTcpClient client, EventArgs args)
+    {
+        var car = client.EntryCar;
+        if (car.AiControlled || car == Leader || car == Follower)
+            return;
+
+        GhostPair(car, false);
+        _ghostedBystanders.Add(car);
+    }
+
+    // Toggles collisions between a bystander and both racers, on both ends.
+    private void GhostPair(EntryCar bystander, bool enabled)
+    {
+        bystander.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = Leader.SessionId, Enabled = enabled });
+        bystander.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = Follower.SessionId, Enabled = enabled });
+        Leader.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
+        Follower.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
     }
 
     public void SendMessage(string message)

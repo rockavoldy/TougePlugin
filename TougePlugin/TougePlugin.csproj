@@ -36,6 +36,9 @@
       <None Update="lua\timing.lua">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="lua\collision.lua">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
       <None Update="wwwroot\Elo.png">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
