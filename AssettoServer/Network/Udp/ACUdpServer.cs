@@ -137,22 +137,25 @@ public class ACUdpServer : BackgroundService
                 }
                 else if (packetId == ACServerProtocol.PositionUpdate)
                 {
-                    // Pass checksum first before sending first update + welcome message.
+                    // Receive checksums first before sending first update + welcome message.
                     // Plugins might rely on checksums to generate CSP extra options
-                    if (client.ChecksumStatus != ChecksumStatus.Succeeded) return;
+                    if (client.ChecksumStatus == ChecksumStatus.Pending) return;
                     
+                    // Checksum kick only works after we sent the first update, so this must be reachable even if checksum failed already
                     if (!client.HasSentFirstUpdate)
                         client.SendFirstUpdate();
                     
-                    if (client.SecurityLevel < _configuration.Extra.MandatoryClientSecurityLevel) return;
+                    if (client.ChecksumStatus == ChecksumStatus.Failed || client.SecurityLevel < _configuration.Extra.MandatoryClientSecurityLevel) return;
 
                     car.UpdatePosition(packetReader.Read<PositionUpdateIn>());
                 }
                 else if (packetId == ACServerProtocol.PingPong)
                 {
+                    var packet = packetReader.ReadPacket<PingResponse>();
+                    
                     long currentTime = _sessionManager.ServerTimeMilliseconds;
-                    car.Ping = (ushort)(currentTime - packetReader.Read<int>());
-                    car.TimeOffset = (int)currentTime - ((car.Ping / 2) + packetReader.Read<int>());
+                    car.Ping = (ushort)(currentTime - packet.Time);
+                    car.TimeOffset = (int)currentTime - ((car.Ping / 2) + packet.ClientTime);
                     car.LastPongTime = currentTime;
                 }
                 else if (_configuration.Extra.EnableUdpClientMessages && packetId == ACServerProtocol.Extended)

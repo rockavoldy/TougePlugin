@@ -1,4 +1,4 @@
-<Solution>
+﻿<Solution>
   <Project Path="AssettoServer.Shared\AssettoServer.Shared.csproj" />
   <Project Path="AssettoServer.Tests\AssettoServer.Tests.csproj" />
   <Project Path="AssettoServer\AssettoServer.csproj" />
@@ -11,7 +11,9 @@
   <Project Path="LiveWeatherPlugin\LiveWeatherPlugin.csproj" />
   <Project Path="RaceChallengePlugin\RaceChallengePlugin.csproj" />
   <Project Path="RandomWeatherPlugin\RandomWeatherPlugin.csproj" />
-  <Project Path="ReplayPlugin\ReplayPlugin.csproj" />
+  <Project Path="ReplayPlugin\ReplayPlugin.csproj">
+    <Build Project="false" />
+  </Project>
   <Project Path="ReportPlugin\ReportPlugin.csproj" />
   <Project Path="SamplePlugin\SamplePlugin.csproj" />
   <Project Path="TagModePlugin\TagModePlugin.csproj" />
