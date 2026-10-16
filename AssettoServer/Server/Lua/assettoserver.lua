@@ -1,5 +1,5 @@
 local license = [[
-Copyright (C)  2025 Niewiarowski, compujuckel
+Copyright (C) 2026 Niewiarowski, compujuckel
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -29,7 +29,7 @@ local function getConfiguration()
     web.get(configUrl, authHeaders, function (err, response)
         if response.status == 200 then
             ac.log("config loaded")
-            configuration = stringify.parse(response.body)
+            configuration = JSON.parse(response.body)
             configurationLoading = false
         end
     end)
@@ -43,7 +43,7 @@ local function setValue(key, value)
         if response.status ~= 200 then
             ui.toast(ui.Icons.Ban, "Error updating " .. key .. " (" .. response.status .. ")")
         else
-            local parsed = stringify.parse(response.body)
+            local parsed = JSON.parse(response.body)
             if parsed.Status ~= "OK" then
                 ui.toast(ui.Icons.Ban, "Error updating " .. key .. " (" .. parsed.ErrorMessage .. ")")
             else

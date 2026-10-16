@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using AssettoServer.Server.Configuration.Extra;
 using AssettoServer.Server.Configuration.Kunos;
@@ -12,7 +14,6 @@ using AssettoServer.Shared.Network.Http.Responses;
 using AssettoServer.Utils;
 using Autofac;
 using FluentValidation;
-using Newtonsoft.Json;
 using Serilog;
 using YamlDotNet.Serialization;
 
@@ -222,7 +223,7 @@ public partial class ACServerConfiguration
         CMContentConfiguration? contentConfiguration = null;
         if (File.Exists(path))
         {
-            contentConfiguration = JsonConvert.DeserializeObject<CMContentConfiguration>(File.ReadAllText(path));
+            contentConfiguration = JsonSerializer.Deserialize<CMContentConfiguration>(File.ReadAllText(path));
         }
 
         return contentConfiguration;
@@ -233,7 +234,7 @@ public partial class ACServerConfiguration
         CMWrapperParams? wrapperParams = null;
         if (File.Exists(path))
         {
-            wrapperParams = JsonConvert.DeserializeObject<CMWrapperParams>(File.ReadAllText(path));
+            wrapperParams = JsonSerializer.Deserialize<CMWrapperParams>(File.ReadAllText(path));
         }
 
         return wrapperParams;
@@ -334,7 +335,9 @@ public partial class ACServerConfiguration
                 }
                 else
                 {
-                    var serializer = new SerializerBuilder().Build();
+                    var serializer = new SerializerBuilder()
+                        .WithEventEmitter(next => new YamlFlowStyleEmitter<Vector3>(next))
+                        .Build();
                     using var file = File.CreateText(configPath);
                     ConfigurationSchemaGenerator.WriteModeLine(file, BaseFolder, schemaPath);
                     var configObj = Activator.CreateInstance(plugin.ConfigurationType)!;
