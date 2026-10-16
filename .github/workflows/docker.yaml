@@ -2,11 +2,14 @@ name: Docker
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build:
     name: Build Docker Image
+    # Only build/push the upstream image for plain AssettoServer tags.
+    # Fork release tags (e.g. v0.0.55-pre44-touge-v0.0.4) must not push to compujuckel/assettoserver.
+    if: ${{ !contains(github.ref_name, 'touge') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
