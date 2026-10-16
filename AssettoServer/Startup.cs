@@ -134,12 +134,7 @@ public class Startup
         {
             if (_configuration.Extra.UseSteamAuth)
             {
-#if DISABLE_STEAM
-                builder.RegisterType<WebApiSteam>().As<ISteam>().SingleInstance();
-#else
-                builder.RegisterType<NativeSteam>().As<IHostedService>().As<ISteam>().SingleInstance();
-#endif
-                builder.RegisterType<SteamManager>().AsSelf().SingleInstance().AutoActivate();
+                builder.RegisterType<SteamService>().AsSelf().As<IHostedService>().SingleInstance();
                 builder.RegisterType<SteamSlotFilter>().As<IOpenSlotFilter>();
             }
         }
@@ -179,16 +174,13 @@ public class Startup
             .AddScheme<ACClientAuthenticationSchemeOptions, ACClientAuthenticationHandler>(
                 ACClientAuthenticationSchemeOptions.Scheme, _ => { });
         services.AddAuthorization();
-        services.AddControllers().AddJsonOptions(options =>
+        
+        var mvcBuilder = services.AddControllers();
+        
+        mvcBuilder.AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, JsonSourceGenerationContext.Default);
         });
-        services.AddControllers(options =>
-        {
-            options.OutputFormatters.Add(new LuaOutputFormatter());
-        });
-        
-        var mvcBuilder = services.AddControllers();
 
         if (_configuration.Extra.EnablePlugins != null)
         {

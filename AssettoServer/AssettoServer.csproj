@@ -1,9 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
-        <RuntimeIdentifiers>win-x64;linux-x64;linux-arm64</RuntimeIdentifiers>
+        <TargetFramework>net11.0</TargetFramework>
         <PublishSingleFile Condition="'$(NO_SINGLE_FILE)' != '1'">true</PublishSingleFile>
         <SelfContained Condition="'$(Configuration)' == 'Release'">true</SelfContained>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -15,72 +14,68 @@
         <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOsPlatform('Windows')) AND '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64' ">win-x64</RuntimeIdentifier>
         <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOsPlatform('Linux')) AND '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'X64' ">linux-x64</RuntimeIdentifier>
         <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::IsOsPlatform('Linux')) AND '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64' ">linux-arm64</RuntimeIdentifier>
-        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-        <DefineConstants Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">DISABLE_STEAM</DefineConstants>
         <PathMap>$(MSBuildProjectDirectory)=$(MSBuildProjectName)</PathMap>
         <InvariantGlobalization>true</InvariantGlobalization>
         <ApplicationIcon>Assets/assettoserver.ico</ApplicationIcon>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Features>runtime-async=on</Features>
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="AssettoServer.Tests" />
+        <InternalsVisibleTo Include="AssettoServer.Tests"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Autofac" Version="8.3.0" />
-        <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
-        <PackageReference Include="CommandLineParser" Version="2.9.1" />
-        <PackageReference Include="CommunityToolkit.Common" Version="8.4.0" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-        <PackageReference Include="CXuesong.Luaon" Version="0.2.7" />
-        <PackageReference Include="CXuesong.Luaon.Json" Version="0.2.1" />
-        <PackageReference Include="DotNext.IO" Version="5.23.0" />
-        <PackageReference Include="DotNext.Unsafe" Version="5.23.0" />
-        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.6.1-beta.1">
+        <PackageReference Include="Autofac"/>
+        <PackageReference Include="Autofac.Extensions.DependencyInjection"/>
+        <PackageReference Include="CommandLineParser"/>
+        <PackageReference Include="CommunityToolkit.Common"/>
+        <PackageReference Include="CommunityToolkit.Mvvm"/>
+        <PackageReference Include="DotNext.IO"/>
+        <PackageReference Include="DotNext.Unsafe"/>
+        <PackageReference Include="ErrorProne.NET.CoreAnalyzers">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="ErrorProne.NET.Structs" Version="0.6.1-beta.1">
+        <PackageReference Include="ErrorProne.NET.Structs">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="FluentValidation" Version="12.0.0" />
-        <PackageReference Include="Humanizer.Core" Version="3.0.0-beta.54" />
-        <PackageReference Include="ini-parser" Version="2.5.2">
+        <PackageReference Include="FluentValidation"/>
+        <PackageReference Include="Humanizer.Core"/>
+        <PackageReference Include="ini-parser">
             <NoWarn>NU1701</NoWarn>
         </PackageReference>
-        <FrameworkReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
-        <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
-        <PackageReference Include="McMaster.NETCore.Plugins" Version="2.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="NJsonSchema" Version="11.3.2" />
-        <PackageReference Include="NodaTime" Version="3.2.2" />
-        <PackageReference Include="Open.NAT" Version="2.1.0">
+        <PackageReference Include="JetBrains.Annotations"/>
+        <PackageReference Include="McMaster.NETCore.Plugins"/>
+        <PackageReference Include="NJsonSchema"/>
+        <PackageReference Include="NodaTime"/>
+        <PackageReference Include="Open.NAT">
             <NoWarn>NU1701</NoWarn>
         </PackageReference>
-        <PackageReference Include="Polly" Version="8.6.1" />
-        <PackageReference Include="prometheus-net" Version="8.2.1" />
-        <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
-        <PackageReference Include="protobuf-net.Grpc" Version="1.2.2" />
-        <PackageReference Include="Qmmands" Version="5.0.2" />
-        <PackageReference Include="Scriban" Version="6.2.1" />
-        <PackageReference Include="Serilog" Version="4.3.0" />
-        <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-        <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-        <PackageReference Include="Serilog.Enrichers.Sensitive" Version="1.7.3" />
-        <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
-        <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-        <PackageReference Include="Serilog.Sinks.Grafana.Loki" Version="8.3.1" />
-        <PackageReference Include="SerilogTimings" Version="3.1.0" />
-        <PackageReference Include="compujuckel.Supercluster.KDTree" Version="1.0.8" />
-        <PackageReference Include="Sigil" Version="5.0.0" />
-        <PackageReference Include="SunCalcNet" Version="1.2.2" />
-        <PackageReference Include="System.IO.Hashing" Version="9.0.6" />
-        <PackageReference Include="YamlDotNet" Version="16.3.0" />
-        <PackageReference Include="MinVer" Version="6.0.0">
+        <PackageReference Include="Polly"/>
+        <PackageReference Include="prometheus-net"/>
+        <PackageReference Include="prometheus-net.AspNetCore"/>
+        <PackageReference Include="protobuf-net.Grpc"/>
+        <PackageReference Include="Qmmands"/>
+        <PackageReference Include="Scriban"/>
+        <PackageReference Include="Serilog"/>
+        <PackageReference Include="Serilog.AspNetCore"/>
+        <PackageReference Include="Serilog.Enrichers.Environment"/>
+        <PackageReference Include="Serilog.Enrichers.Sensitive"/>
+        <PackageReference Include="Serilog.Expressions"/>
+        <PackageReference Include="Serilog.Sinks.Async"/>
+        <PackageReference Include="Serilog.Sinks.Console"/>
+        <PackageReference Include="Serilog.Sinks.File"/>
+        <PackageReference Include="Serilog.Sinks.Grafana.Loki"/>
+        <PackageReference Include="SerilogTimings"/>
+        <PackageReference Include="compujuckel.Facepunch.Steamworks"/>
+        <PackageReference Include="compujuckel.Supercluster.KDTree"/>
+        <PackageReference Include="Sigil"/>
+        <PackageReference Include="SunCalcNet"/>
+        <PackageReference Include="System.IO.Hashing"/>
+        <PackageReference Include="YamlDotNet"/>
+        <PackageReference Include="MinVer">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
@@ -91,70 +86,35 @@
         <MinVerIgnoreHeight>true</MinVerIgnoreHeight>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
-        <ContentWithTargetPath Include="Redist/libsteam_api.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>libsteam_api.so</TargetPath>
-        </ContentWithTargetPath>
-        <ContentWithTargetPath Include="Redist/steam_appid.txt">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>steam_appid.txt</TargetPath>
-        </ContentWithTargetPath>
-        <Reference Include="Facepunch.Steamworks.Posix">
-            <HintPath>..\Redist\Facepunch.Steamworks.Posix.dll</HintPath>
-        </Reference>
-        <ContentWithTargetPath Include="Redist/libcsp_xxhash3.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>libcsp_xxhash3.so</TargetPath>
-        </ContentWithTargetPath>
-    </ItemGroup>
-    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">
-        <ContentWithTargetPath Include="Redist/libcsp_xxhash3_arm64.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>libcsp_xxhash3.so</TargetPath>
-        </ContentWithTargetPath>
-    </ItemGroup>
-    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
-        <ContentWithTargetPath Include="Redist/steam_api64.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>steam_api64.dll</TargetPath>
-        </ContentWithTargetPath>
-        <Reference Include="Facepunch.Steamworks.Win64">
-            <HintPath>..\Redist\Facepunch.Steamworks.Win64.dll</HintPath>
-        </Reference>
-        <ContentWithTargetPath Include="Redist/csp_xxhash3.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>csp_xxhash3.dll</TargetPath>
-        </ContentWithTargetPath>
-    </ItemGroup>
-
     <ItemGroup>
         <ProjectReference Include="..\AssettoServer.Shared\AssettoServer.Shared.csproj">
             <PrivateAssets>all</PrivateAssets>
         </ProjectReference>
-        <!--<Reference Include="Supercluster.KDTree">
-          <HintPath>..\..\..\..\RiderProjects\Supercluster.KDTree\KDTree\bin\Release\net7.0\Supercluster.KDTree.dll</HintPath>
-        </Reference>-->
     </ItemGroup>
 
     <ItemGroup>
-        <None Remove="Server\Ai\ai_debug.lua" />
-        <EmbeddedResource Include="Server\Ai\ai_debug.lua" />
-        <None Remove="Server\Lua\assettoserver.lua" />
-        <EmbeddedResource Include="Server\Lua\assettoserver.lua" />
-        <None Remove="Assets\logo_42.png" />
-        <EmbeddedResource Include="Assets\logo_42.png" />
-        <None Remove="Assets\srp-logo-new.png" />
-        <EmbeddedResource Include="Assets\srp-logo-new.png" />
-        <None Remove="Assets\crash_report.md.tpl" />
-        <EmbeddedResource Include="Assets\crash_report.md.tpl" />
-        <None Remove="Assets\server_cfg.ini" />
-        <EmbeddedResource Include="Assets\server_cfg.ini" />
-        <None Remove="Assets\entry_list.ini" />
-        <EmbeddedResource Include="Assets\entry_list.ini" />
-        
+        <None Remove="Server\Ai\ai_debug.lua"/>
+        <EmbeddedResource Include="Server\Ai\ai_debug.lua"/>
+        <None Remove="Server\Lua\assettoserver.lua"/>
+        <EmbeddedResource Include="Server\Lua\assettoserver.lua"/>
+        <None Remove="Assets\logo_42.png"/>
+        <EmbeddedResource Include="Assets\logo_42.png"/>
+        <None Remove="Assets\srp-logo-new.png"/>
+        <EmbeddedResource Include="Assets\srp-logo-new.png"/>
+        <None Remove="Assets\crash_report.md.tpl"/>
+        <EmbeddedResource Include="Assets\crash_report.md.tpl"/>
+        <None Remove="Assets\server_cfg.ini"/>
+        <EmbeddedResource Include="Assets\server_cfg.ini"/>
+        <None Remove="Assets\entry_list.ini"/>
+        <EmbeddedResource Include="Assets\entry_list.ini"/>
+
         <None Update="wwwroot\**\*">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+
+        <None Update="Assets\steam_appid.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>steam_appid.txt</TargetPath>
         </None>
     </ItemGroup>
 </Project>

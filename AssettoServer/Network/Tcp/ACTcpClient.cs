@@ -635,19 +635,20 @@ public class ACTcpClient : IClient
     private void OnChecksum(PacketReader reader)
     {
         var allChecksums = _checksumManager.GetChecksumsForHandshake(EntryCar.Model);
+        var checksumsLength = MD5.HashSizeInBytes * (allChecksums.Count + 1);
         bool passedChecksum = false;
-        byte[] fullChecksum = new byte[MD5.HashSizeInBytes * (allChecksums.Count + 1)];
-        if (reader.Buffer.Length == fullChecksum.Length + 1)
+
+        var packet = reader.ReadPacket<ChecksumPacket>();
+        if (packet.Checksum.Length == checksumsLength)
         {
-            reader.ReadBytes(fullChecksum);
-            CarChecksum = fullChecksum.AsSpan(fullChecksum.Length - MD5.HashSizeInBytes).ToArray();
+            CarChecksum = packet.Checksum.AsSpan(packet.Checksum.Length - MD5.HashSizeInBytes).ToArray();
             passedChecksum = !_checksumManager.CarChecksums.TryGetValue(EntryCar.Model, out var modelChecksums)
                              || modelChecksums.Count == 0
                              || modelChecksums.Any(c => CarChecksum.AsSpan().SequenceEqual(c.Value));
 
             for (int i = 0; i < allChecksums.Count; i++)
             {
-                if (!allChecksums[i].Value.AsSpan().SequenceEqual(fullChecksum.AsSpan(i * MD5.HashSizeInBytes, MD5.HashSizeInBytes)))
+                if (!allChecksums[i].Value.AsSpan().SequenceEqual(packet.Checksum.AsSpan(i * MD5.HashSizeInBytes, MD5.HashSizeInBytes)))
                 {
                     Logger.Information("{ClientName} failed checksum for file {ChecksumFile}", Name, allChecksums[i].Key);
                     passedChecksum = false;
@@ -914,7 +915,7 @@ public class ACTcpClient : IClient
                     await Task.Delay(TimeSpan.FromSeconds(_configuration.Extra.PlayerChecksumTimeoutSeconds));
                     if (ChecksumStatus != ChecksumStatus.Succeeded && IsConnected)
                     {
-                        Log.Information("Checksum request for {ClientName} ({SessionId}) timed out. Consider increasing PlayerChecksumTimeoutSeconds", Name, SessionId);
+                        Logger.Information("Checksum request for {ClientName} ({SessionId}) timed out. Consider increasing PlayerChecksumTimeoutSeconds", Name, SessionId);
                         await _entryCarManager.KickAsync(this, KickReason.ChecksumFailed, null, null, $"{Name} did not send the requested checksums.");
                     }
                 });
@@ -925,7 +926,7 @@ public class ACTcpClient : IClient
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error sending first update to {ClientName}", Name);
+            Logger.Error(ex, "Error sending first update to {ClientName}", Name);
         }
     }
 
@@ -985,7 +986,7 @@ public class ACTcpClient : IClient
             }
 
             OutgoingPacketChannel.Writer.TryComplete();
-            _ = await Task.WhenAny(Task.Delay(2000), SendLoopTask);
+            await SendLoopTask.WaitAsync(TimeSpan.FromSeconds(2));
 
             try
             {
