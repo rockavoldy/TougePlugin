@@ -6,6 +6,8 @@ local isLookingForFinish = false -- Toggle for this script
 
 local car = ac.getCar(0)
 
+ac.log('Touge timing.lua loaded')
+
 local SessionStates = {
     Off = 0,
     FirstTwo = 1,
@@ -19,6 +21,9 @@ local finishEvent = ac.OnlineEvent(
         ac.StructItem.key('AS_Finish'),
         lookForFinish = ac.StructItem.boolean(),
     }, function (sender, message)
+        ac.debug('AS_Finish.lookForFinish', message.lookForFinish)
+        ac.debug('AS_Finish.useTrackFinish', useTrackFinish)
+
         if message.lookForFinish and not useTrackFinish then
             isLookingForFinish = true
             print(finishLine)
@@ -39,6 +44,7 @@ local initializationEvent = ac.OnlineEvent(
         courseNames = ac.StructItem.string(1024),
         showRaceTypeToggle = ac.StructItem.boolean(),
     }, function (sender, message)
+        ac.debug('AS_Initialization.useTrackFinish', message.useTrackFinish)
         useTrackFinish = message.useTrackFinish
     end
 )
@@ -88,6 +94,7 @@ function script.update(dt)
         local currentPos = car.position
         local currentPos2D = {currentPos.x, currentPos.z}
         if finishLine ~= nil and previousPos ~= nil and AreIntersecting({previousPos[1], previousPos[2]}, currentPos2D, {finishLine[1].x, finishLine[1].y}, {finishLine[2].x, finishLine[2].y}) then
+            ac.log('[Touge] finish line crossed')
             print("Crossed line!")
             finishEvent({lookForFinish = true})
             currentPos2D = nil -- This way previousPos will be nil

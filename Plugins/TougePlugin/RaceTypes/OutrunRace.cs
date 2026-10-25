@@ -41,7 +41,7 @@ public class OutrunRace : IRaceType
             if (Vector3.DistanceSquared(LastLeaderPosition, leaderPosition) > 40000)
             {
                 // Leader teleported.
-                race.SendMessage($"{OutrunLeader.Client!.Name} teleported, {OutrunChaser.Client!.Name} wins.");
+                race.SendMessage($"{OutrunLeader.Client?.Name} teleported, {OutrunChaser.Client?.Name} wins.");
                 return RaceResult.Win(OutrunChaser);
             }
             LastLeaderPosition = leaderPosition;
@@ -50,13 +50,13 @@ public class OutrunRace : IRaceType
             if (Vector3.DistanceSquared(OutrunLeader.Status.Position, OutrunChaser.Status.Position) > outRunDistanceSquared)
             {
                 // Leader has outrun the chaser.
-                race.SendMessage($"{OutrunLeader.Client!.Name} won the race by outrunning {OutrunChaser.Client!.Name}");
+                race.SendMessage($"{OutrunLeader.Client?.Name} won the race by outrunning {OutrunChaser.Client?.Name}");
                 return RaceResult.Win(OutrunLeader);
             }
 
             if (race.SessionManager.ServerTimeMilliseconds - LastOvertakeTime > race.Configuration.OutrunLeadTimeout * 1000)
             {
-                race.SendMessage($"{OutrunLeader.Client!.Name} kept the lead long enough to take the win!");
+                race.SendMessage($"{OutrunLeader.Client?.Name} kept the lead long enough to take the win!");
                 return RaceResult.Win(OutrunLeader);
             }
 

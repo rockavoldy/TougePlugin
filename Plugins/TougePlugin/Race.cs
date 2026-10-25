@@ -38,12 +38,16 @@ public class Race
     public string FollowerName { get; }
 
     private bool IsGo = false;
+    private volatile bool _cancelled;
 
     private readonly List<EntryCar> _ghostedBystanders = [];
     private bool _collisionsGhosted = false;
 
     private readonly IRaceType _raceType;
     private readonly Course _course;
+
+    private static int _raceIdCounter;
+    private readonly int _raceId = System.Threading.Interlocked.Increment(ref _raceIdCounter);
 
     public delegate Race Factory(EntryCar leader, EntryCar follower, IRaceType raceType, Course course);
 
@@ -61,15 +65,22 @@ public class Race
         SessionManager = sessionManager;
         _raceType = raceType;
 
-        Leader.Client!.Disconnecting += OnClientDisconnected;
-        Follower.Client!.Disconnecting += OnClientDisconnected;
+        if (Leader.Client is { } leaderClient)
+            leaderClient.Disconnecting += OnClientDisconnected;
+        if (Follower.Client is { } followerClient)
+            followerClient.Disconnecting += OnClientDisconnected;
         _course = course;
+
+        Log.Debug("[TougeRace {RaceId}] Race created. Leader={LeaderName} ({LeaderSessionId}) Follower={FollowerName} ({FollowerSessionId})",
+            _raceId, LeaderName, Leader.SessionId, FollowerName, Follower.SessionId);
     }
 
     public async Task<RaceResult> RaceAsync()
     {
         try
         {
+            Log.Debug("[TougeRace {RaceId}] RaceAsync started", _raceId);
+
             SpawnPair? startSlots = await InitializeRaceAsync();
             if (startSlots == null)
             {
@@ -91,7 +102,7 @@ public class Race
 
         catch (Exception e)
         {
-            Log.Error(e, "Error while running race.");
+            Log.Error(e, "[TougeRace {RaceId}] Error while running race", _raceId);
             SendMessage("There was an error while runnning the race.");
             return RaceResult.Tie();
         }
@@ -103,13 +114,38 @@ public class Race
 
     private async Task<SpawnPair?> InitializeRaceAsync()
     {
+        Log.Debug("[TougeRace {RaceId}] InitializeRaceAsync started", _raceId);
+
         var setupTask = Task.Run(() => SetUpRaceAsync());
+        _ = setupTask.ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+                Log.Error(t.Exception, "[TougeRace {RaceId}] SetUpRaceAsync background task faulted", _raceId);
+        }, TaskContinuationOptions.ExecuteSynchronously);
+
         var forfeitTask = Forfeit.Task;
 
         var completedSetup = await Task.WhenAny(setupTask, forfeitTask);
 
         if (completedSetup == forfeitTask)
         {
+            _cancelled = true;
+            Log.Debug("[TougeRace {RaceId}] Setup cancelled by forfeit. Awaiting background setup before cleanup", _raceId);
+
+            // Continue observing the setup task so an in-flight teleport loop can
+            // exit via _cancelled instead of continuing after the player forfeited.
+            try
+            {
+                await setupTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "[TougeRace {RaceId}] Background setup failed after forfeit cancellation", _raceId);
+            }
+
             SendMessage("Race cancelled due to player forfeit.");
             return null;
         }
@@ -118,15 +154,19 @@ public class Race
 
         if (startSlots == null)
         {
+            Log.Debug("[TougeRace {RaceId}] Setup failed or teleport timed out", _raceId);
             SendMessage("Teleportation failed. Race setup aborted.");
             return null;
         }
 
+        Log.Debug("[TougeRace {RaceId}] InitializeRaceAsync completed", _raceId);
         return startSlots;
     }
 
     private async Task<RaceResult?> RunCountdownAsync(SpawnPair startSlots)
     {
+        Log.Debug("[TougeRace {RaceId}] RunCountdownAsync started (IsRollingStart={IsRollingStart})", _raceId, Configuration.IsRollingStart);
+
         while (!IsGo)
         {
             byte signalStage = 0;
@@ -173,6 +213,7 @@ public class Race
                         }
                     }
                     _ = SendTimedMessageAsync("Go!", true);
+                    Log.Information("[TougeRace {RaceId}] Countdown reached Go, enabling race collisions", _raceId);
                     IsGo = true;
                     EnableRaceCollisions();
                     break;
@@ -188,9 +229,11 @@ public class Race
 
     private void FinishRace()
     {
+        Log.Debug("[TougeRace {RaceId}] FinishRace cleanup", _raceId);
+
         // General clean up
-        Leader.Client!.Disconnecting -= OnClientDisconnected;
-        Follower.Client!.Disconnecting -= OnClientDisconnected;
+        if (Leader.Client is { } leaderClient) leaderClient.Disconnecting -= OnClientDisconnected;
+        if (Follower.Client is { } followerClient) followerClient.Disconnecting -= OnClientDisconnected;
         DisableRaceCollisions();
     }
 
@@ -205,6 +248,8 @@ public class Race
 
         var bystanders = _entryCarManager.EntryCars
             .Where(car => car.Client != null && !car.AiControlled && car != Leader && car != Follower);
+
+        Log.Debug("[TougeRace {RaceId}] Ghosting {BystanderCount} bystanders against racers", _raceId, bystanders.Count());
 
         foreach (var bystander in bystanders)
         {
@@ -245,10 +290,25 @@ public class Race
     // Toggles collisions between a bystander and both racers, on both ends.
     private void GhostPair(EntryCar bystander, bool enabled)
     {
-        bystander.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = Leader.SessionId, Enabled = enabled });
-        bystander.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = Follower.SessionId, Enabled = enabled });
-        Leader.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
-        Follower.Client!.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
+        Log.Debug("[TougeRace {RaceId}] GhostPair bystander={BystanderSessionId} against leader={LeaderSessionId} follower={FollowerSessionId} enabled={Enabled} (bystanderClient={BystanderConnected}, leaderClient={LeaderConnected}, followerClient={FollowerConnected})",
+            _raceId, bystander.SessionId, Leader.SessionId, Follower.SessionId, enabled,
+            bystander.Client != null, Leader.Client != null, Follower.Client != null);
+
+        var bystanderClient = bystander.Client;
+        var leaderClient = Leader.Client;
+        var followerClient = Follower.Client;
+
+        if (bystanderClient == null || leaderClient == null || followerClient == null)
+        {
+            Log.Warning("[TougeRace {RaceId}] Skipping GhostPair because a client is unavailable. bystanderConnected={BystanderConnected} leaderConnected={LeaderConnected} followerConnected={FollowerConnected}",
+                _raceId, bystanderClient != null, leaderClient != null, followerClient != null);
+            return;
+        }
+
+        bystanderClient.SendPacket(new RaceCollisionPacket { TargetSessionId = Leader.SessionId, Enabled = enabled });
+        bystanderClient.SendPacket(new RaceCollisionPacket { TargetSessionId = Follower.SessionId, Enabled = enabled });
+        leaderClient.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
+        followerClient.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
     }
 
     public void SendMessage(string message)
@@ -293,11 +353,17 @@ public class Race
 
     private void OnClientDisconnected(ACTcpClient sender, EventArgs args)
     {
+        Log.Debug("[TougeRace {RaceId}] Client disconnecting: {ClientName} ({SessionId})", _raceId, sender.Name, sender.SessionId);
         ForfeitPlayer(sender);
     }
 
     internal void ForfeitPlayer(ACTcpClient sender)
     {
+        Log.Debug("[TougeRace {RaceId}] Forfeit/disconnect requested by {ClientName} ({SessionId}), IsGo={IsGo}, RaceType={RaceTypeName}",
+            _raceId, sender.Name, sender.SessionId, IsGo, _raceType.GetType().Name);
+
+        _cancelled = true;
+
         if (IsGo && _raceType is CourseRace)
         {
             // Course race has started so simply set the result of the race to disconnected.
@@ -317,12 +383,22 @@ public class Race
 
     private async Task<bool> TeleportToStartAsync(EntryCar Leader, EntryCar Follower, SpawnPair startSlots)
     {
-        Leader.Client!.SendPacket(new TeleportPacket
+        Log.Debug("[TougeRace {RaceId}] TeleportToStartAsync leader={LeaderSessionId} follower={FollowerSessionId}",
+            _raceId, Leader.SessionId, Follower.SessionId);
+
+        if (Leader.Client is not { } leaderClient || Follower.Client is not { } followerClient)
+        {
+            Log.Warning("[TougeRace {RaceId}] TeleportToStartAsync cannot proceed because a client is unavailable. LeaderConnected={LeaderConnected} FollowerConnected={FollowerConnected}",
+                _raceId, Leader.Client != null, Follower.Client != null);
+            return false;
+        }
+
+        leaderClient.SendPacket(new TeleportPacket
         {
             Position = startSlots.Leader.Position,
             Heading = startSlots.Leader.Heading,
         });
-        Follower.Client!.SendPacket(new TeleportPacket
+        followerClient.SendPacket(new TeleportPacket
         {
             Position = startSlots.Follower.Position,
             Heading = startSlots.Follower.Heading,
@@ -340,6 +416,12 @@ public class Race
         {
             while (!isLeaderTeleported || !isFollowerTeleported)
             {
+                if (_cancelled)
+                {
+                    Log.Debug("[TougeRace {RaceId}] Teleport aborted because race was cancelled", _raceId);
+                    return false;
+                }
+
                 Vector3 currentLeaderPos = Leader.Status.Position;
                 Vector3 currentFollowerPos = Follower.Status.Position;
 
@@ -362,6 +444,8 @@ public class Race
         }
         catch (OperationCanceledException)
         {
+            Log.Warning("[TougeRace {RaceId}] TeleportToStartAsync timed out. leaderTeleported={LeaderTeleported} followerTeleported={FollowerTeleported}",
+                _raceId, isLeaderTeleported, isFollowerTeleported);
             return false;
         }
         finally
@@ -493,13 +577,28 @@ public class Race
 
     private void SendFinishLine(Course course)
     {
-        Leader.Client!.SendPacket(new FinishLinePacket { FinishPoint1 = course.FinishLine![0], FinishPoint2 = course.FinishLine[1] });
-        Follower.Client!.SendPacket(new FinishLinePacket { FinishPoint1 = course.FinishLine![0], FinishPoint2 = course.FinishLine[1] });
+        if (course.FinishLine == null)
+        {
+            Log.Warning("[TougeRace {RaceId}] Skipping SendFinishLine because FinishLine is not defined", _raceId);
+            return;
+        }
+
+        if (Leader.Client is { } leaderClient)
+            leaderClient.SendPacket(new FinishLinePacket { FinishPoint1 = course.FinishLine[0], FinishPoint2 = course.FinishLine[1] });
+        if (Follower.Client is { } followerClient)
+            followerClient.SendPacket(new FinishLinePacket { FinishPoint1 = course.FinishLine[0], FinishPoint2 = course.FinishLine[1] });
     }
 
     private async Task<SpawnPair?> SetUpRaceAsync()
     {
         SpawnPair startSlots = await GetStartSlotsAsync();
+
+        if (_cancelled)
+        {
+            Log.Debug("[TougeRace {RaceId}] SetUpRaceAsync aborted after start slots because race was cancelled", _raceId);
+            return null;
+        }
+
         if (!Configuration.UseTrackFinish)
         {
             SendFinishLine(_course);
@@ -531,7 +630,9 @@ public class Race
 
     private void UnlockControls()
     {
-        Leader.Client!.SendPacket(new LockControlsPacket { LockControls = false });
-        Follower.Client!.SendPacket(new LockControlsPacket { LockControls = false });
+        if (Leader.Client is { } leaderClient)
+            leaderClient.SendPacket(new LockControlsPacket { LockControls = false });
+        if (Follower.Client is { } followerClient)
+            followerClient.SendPacket(new LockControlsPacket { LockControls = false });
     }
 }

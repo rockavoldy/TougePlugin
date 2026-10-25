@@ -1,5 +1,7 @@
 local baseUrl = "http://" .. ac.getServerIP() .. ":" .. ac.getServerPortHTTP() .. "/static/TougePlugin/"
 
+ac.log('Touge hud.lua loaded')
+
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 
@@ -141,6 +143,11 @@ local sessionStateEvent = ac.OnlineEvent(
         result3 = ac.StructItem.int32(),
         sessionState = ac.StructItem.int32()
     }, function (sender, message)
+        ac.debug('AS_SessionState.sessionState', message.sessionState)
+        ac.debug('AS_SessionState.result1', message.result1)
+        ac.debug('AS_SessionState.result2', message.result2)
+        ac.debug('AS_SessionState.result3', message.result3)
+
         standings[1] = message.result1
         standings[2] = message.result2
         standings[3] = message.result3
@@ -202,6 +209,9 @@ local notificationEvent = ac.OnlineEvent(
         message = ac.StructItem.string(64),
         isCountdown = ac.StructItem.boolean(),
     }, function (sender, message)
+        ac.debug('AS_Notification.isCountdown', message.isCountdown)
+        ac.debug('AS_Notification.message', message.message)
+
         if not message.isCountdown then
             notificationMessage = message.message
             hasIncomingNotification = true
@@ -233,6 +243,10 @@ local initializationEvent = ac.OnlineEvent(
         courseNames = ac.StructItem.string(1024),
         showRaceTypeToggle = ac.StructItem.boolean(),
     }, function (sender, message)
+        ac.debug('AS_Initialization.discreteMode', message.discreteMode)
+        ac.debug('AS_Initialization.loadSteamAvatars', message.loadSteamAvatars)
+        ac.debug('AS_Initialization.useTrackFinish', message.useTrackFinish)
+
         loadSteamAvatars = message.loadSteamAvatars
         showRaceTypeToggle = message.showRaceTypeToggle
 

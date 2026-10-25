@@ -99,6 +99,7 @@ public class Touge : BackgroundService, IHostedService
         }
 
         _entryCarManager.ClientConnected += OnClientConnected;
+        _entryCarManager.ClientDisconnected += OnClientDisconnected;
 
         return Task.CompletedTask;
     }
@@ -119,6 +120,9 @@ public class Touge : BackgroundService, IHostedService
 
     private void OnClientConnected(ACTcpClient client, EventArgs args)
     {
+        Log.Debug("[Touge] Client connected event: {ClientName} ({SessionId}) IsConnected={IsConnected} HasSentFirstUpdate={HasSentFirstUpdate} Guid={Guid}",
+            client.Name, client.SessionId, client.IsConnected, client.HasSentFirstUpdate, client.Guid);
+
         // Check if the player is registered in the database
         string playerId = client.Guid.ToString();
         database.CheckPlayerAsync(playerId);
@@ -126,6 +130,19 @@ public class Touge : BackgroundService, IHostedService
         if (_configuration.SteamAPIKey != null)
         {
             LoadAvatar(client);
+        }
+    }
+
+    private void OnClientDisconnected(ACTcpClient client, EventArgs args)
+    {
+        Log.Debug("[Touge] Client disconnected event: {ClientName} ({SessionId}) IsConnected={IsConnected} HasSentFirstUpdate={HasSentFirstUpdate} Guid={Guid}",
+            client.Name, client.SessionId, client.IsConnected, client.HasSentFirstUpdate, client.Guid);
+
+        if (_instances.TryGetValue(client.SessionId, out var session))
+        {
+            var tougeSession = session.CurrentSession;
+            Log.Debug("[Touge] Disconnected client session state: {ClientName} ({SessionId}) HasCurrentSession={HasCurrentSession} ActiveRace={HasActiveRace}",
+                client.Name, client.SessionId, tougeSession != null, tougeSession?.ActiveRace != null);
         }
     }
 
@@ -141,6 +158,9 @@ public class Touge : BackgroundService, IHostedService
 
     private async void OnInitializationPacket(ACTcpClient client, InitializationPacket packet)
     {
+        Log.Debug("[Touge] Initialization packet received from {ClientName} ({SessionId}) IsConnected={IsConnected} HasSentFirstUpdate={HasSentFirstUpdate}",
+            client.Name, client.SessionId, client.IsConnected, client.HasSentFirstUpdate);
+
         string playerId = client.Guid.ToString();
         var(elo, racesCompleted) = await database.GetPlayerStatsAsync(playerId);
 
@@ -154,12 +174,15 @@ public class Touge : BackgroundService, IHostedService
 
         bool showToggle = _configuration.EnableOutrunRace && _configuration.EnableCourseRace;
 
-        client.SendPacket(new InitializationPacket { 
-            Elo = elo, 
-            RacesCompleted = racesCompleted, 
-            UseTrackFinish = _configuration.UseTrackFinish, 
-            DiscreteMode = _configuration.DiscreteMode, 
-            LoadSteamAvatars = _loadSteamAvatars, 
+        Log.Debug("[Touge] Initialization response before send. Name={ClientName} SessionId={SessionId} Elo={Elo} Races={Races} UseTrackFinish={UseTrackFinish} CourseCount={CourseCount} IsConnected={IsConnected}",
+            client.Name, client.SessionId, elo, racesCompleted, _configuration.UseTrackFinish, selectedCourseNames.Length, client.IsConnected);
+
+        client.SendPacket(new InitializationPacket {
+            Elo = elo,
+            RacesCompleted = racesCompleted,
+            UseTrackFinish = _configuration.UseTrackFinish,
+            DiscreteMode = _configuration.DiscreteMode,
+            LoadSteamAvatars = _loadSteamAvatars,
             CourseNames = courseNames,
             ShowRaceTypeToggle = showToggle,
         });
@@ -167,6 +190,9 @@ public class Touge : BackgroundService, IHostedService
 
     private void OnInvitePacket(ACTcpClient client, InvitePacket packet)
     {
+        Log.Debug("[Touge] Invite packet received from {ClientName} ({SessionId}) IsConnected={IsConnected} Sender={InviteSenderName} Recipient={InviteRecipientGuid} Course={CourseName} IsCourse={IsCourse}",
+            client.Name, client.SessionId, client.IsConnected, packet.InviteSenderName, packet.InviteRecipientGuid, packet.CourseName, packet.IsCourse);
+
         if (packet.InviteSenderName == "nearby")
             InviteNearbyCar(client);
         else if (packet.InviteSenderName == "a")
@@ -194,6 +220,9 @@ public class Touge : BackgroundService, IHostedService
 
     private async void OnLobbyStatusPacketAsync(ACTcpClient client, LobbyStatusPacket packet)
     {
+        Log.Debug("[Touge] Lobby status packet received from {ClientName} ({SessionId}) IsConnected={IsConnected}",
+            client.Name, client.SessionId, client.IsConnected);
+
         // Find if there is a player close to the client.
         List<EntryCar>? closestCars = GetSession(client!.EntryCar).FindClosestCars(5);
 
@@ -258,12 +287,18 @@ public class Touge : BackgroundService, IHostedService
     private void OnForfeitPacket(ACTcpClient sender, ForfeitPacket packet)
     {
         Race? activeRace = GetActiveRace(sender.EntryCar);
+        Log.Debug("[Touge] Forfeit packet received from {ClientName} ({SessionId}) IsConnected={IsConnected} ActiveRace={ActiveRacePresent}",
+            sender.Name, sender.SessionId, sender.IsConnected, activeRace != null);
+
         activeRace?.ForfeitPlayer(sender);
     }
 
     private void OnFinishPacket(ACTcpClient sender, FinishPacket packet)
     {
         Race? activeRace = GetActiveRace(sender.EntryCar);
+        Log.Debug("[Touge] Finish packet received from {ClientName} ({SessionId}) IsConnected={IsConnected} ActiveRace={ActiveRacePresent} LookForFinish={LookForFinish}",
+            sender.Name, sender.SessionId, sender.IsConnected, activeRace != null, packet.LookForFinish);
+
         activeRace?.OnClientLapCompleted(sender, null);
     }
 
@@ -333,7 +368,16 @@ public class Touge : BackgroundService, IHostedService
 
     internal static void SendNotification(ACTcpClient? client, string message, bool isCountdown = false)
     {
-        client?.SendPacket(new NotificationPacket { Message = message, IsCountDown = isCountdown });
+        if (client == null)
+        {
+            Log.Debug("[Touge] SendNotification skipped: client is null. Message={Message} IsCountdown={IsCountdown}", message, isCountdown);
+            return;
+        }
+
+        Log.Debug("[Touge] SendNotification. Name={ClientName} SessionId={SessionId} IsConnected={IsConnected} HasSentFirstUpdate={HasSentFirstUpdate} IsCountdown={IsCountdown} Message={Message}",
+            client.Name, client.SessionId, client.IsConnected, client.HasSentFirstUpdate, isCountdown, message);
+
+        client.SendPacket(new NotificationPacket { Message = message, IsCountDown = isCountdown });
     }
 
     private Dictionary<string, Course> GetCourses()

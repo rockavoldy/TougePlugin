@@ -1,6 +1,7 @@
-﻿using System.Numerics;
+using System.Numerics;
 using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
+using Serilog;
 using TougePlugin.Models;
 using TougePlugin.Packets;
 using TougePlugin.TougeRulesets;
@@ -88,6 +89,9 @@ public class EntryCarTougeSession
     // In this case it sets the CurrentSession back to null for both cars.
     internal async Task ChallengeCar(EntryCar car, string courseName, bool isCourse = true)
     {
+        Log.Debug("[TougeSession] ChallengeCar from {ChallengerName} ({ChallengerSessionId}) to {TargetName} ({TargetSessionId}) course={CourseName} isCourse={IsCourse}",
+            _entryCar.Client?.Name, _entryCar.SessionId, car.Client?.Name, car.SessionId, courseName, isCourse);
+
         void Reply(string message)
         {
             Touge.SendNotification(_entryCar.Client!, message);

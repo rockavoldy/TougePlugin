@@ -7,12 +7,24 @@ public class CourseRace : IRaceType
 {
     public async Task<RaceResult> RunRaceAsync(Race race)
     {
+        bool leaderSubscribed = false;
+        bool followerSubscribed = false;
+
         try
         {
             if (race.Configuration.UseTrackFinish)
             {
-                race.Leader.Client!.LapCompleted += race.OnClientLapCompleted;
-                race.Follower.Client!.LapCompleted += race.OnClientLapCompleted;
+                if (race.Leader.Client is { } leaderClient)
+                {
+                    leaderClient.LapCompleted += race.OnClientLapCompleted;
+                    leaderSubscribed = true;
+                }
+
+                if (race.Follower.Client is { } followerClient)
+                {
+                    followerClient.LapCompleted += race.OnClientLapCompleted;
+                    followerSubscribed = true;
+                }
             }
             else
             {
@@ -45,21 +57,31 @@ public class CourseRace : IRaceType
         finally
         {
             NotifyLookForFinish(false, race);
-            race.Leader.Client!.LapCompleted -= race.OnClientLapCompleted;
-            race.Follower.Client!.LapCompleted -= race.OnClientLapCompleted;
+
+            if (leaderSubscribed && race.Leader.Client is { } leaderClient)
+                leaderClient.LapCompleted -= race.OnClientLapCompleted;
+            if (followerSubscribed && race.Follower.Client is { } followerClient)
+                followerClient.LapCompleted -= race.OnClientLapCompleted;
         }
     }
 
     private static void NotifyLookForFinish(bool lookForFinish, Race race)
     {
-        race.Leader.Client!.SendPacket(new FinishPacket
+        if (race.Leader.Client is { } leaderClient)
         {
-            LookForFinish = lookForFinish,
-        });
-        race.Follower.Client!.SendPacket(new FinishPacket
+            leaderClient.SendPacket(new FinishPacket
+            {
+                LookForFinish = lookForFinish,
+            });
+        }
+
+        if (race.Follower.Client is { } followerClient)
         {
-            LookForFinish = lookForFinish,
-        });
+            followerClient.SendPacket(new FinishPacket
+            {
+                LookForFinish = lookForFinish,
+            });
+        }
     }
 
 

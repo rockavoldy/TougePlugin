@@ -66,6 +66,9 @@ public class TougeSession
 
     public Task StartAsync()
     {
+        Log.Debug("[TougeSession] StartAsync requested. Challenger={ChallengerName} ({ChallengerSessionId}) Challenged={ChallengedName} ({ChallengedSessionId}) IsActive={IsActive}",
+            Challenger.Client?.Name, Challenger.SessionId, Challenged.Client?.Name, Challenged.SessionId, IsActive);
+
         if (!IsActive)
         {
             IsActive = true;
@@ -77,6 +80,9 @@ public class TougeSession
 
     private async Task TougeSessionAsync()
     {
+        Log.Debug("[TougeSession] Session started. Challenger={ChallengerName} ({ChallengerSessionId}) Challenged={ChallengedName} ({ChallengedSessionId})",
+            Challenger.Client?.Name, Challenger.SessionId, Challenged.Client?.Name, Challenged.SessionId);
+
         try
         {
             RaceResult result = await _ruleset.RunSessionAsync(this);
@@ -94,7 +100,7 @@ public class TougeSession
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error while running touge session.");
+            Log.Error(ex, "[TougeSession] Error while running touge session");
         }
         finally
         {
@@ -104,11 +110,17 @@ public class TougeSession
 
     public async Task<RaceResult> RunRaceAsync(EntryCar leader, EntryCar follower)
     {
+        Log.Debug("[TougeSession] RunRaceAsync starting. Leader={LeaderName} ({LeaderSessionId}, ClientConnected={LeaderConnected}) Follower={FollowerName} ({FollowerSessionId}, ClientConnected={FollowerConnected})",
+            leader.Client?.Name, leader.SessionId, leader.Client != null, follower.Client?.Name, follower.SessionId, follower.Client != null);
+
         IRaceType raceType = _raceTypeFactory(_raceType);
         Race race = _raceFactory(leader, follower, raceType, _course);
         ActiveRace = race;
         RaceResult result = await race.RaceAsync();
         ActiveRace = null;
+
+        Log.Debug("[TougeSession] RunRaceAsync finished. Outcome={Outcome} Winner={WinnerName}",
+            result.Outcome, result.ResultCar?.Client?.Name);
 
         return result;
     }
@@ -169,8 +181,8 @@ public class TougeSession
         await _plugin.database.UpdatePlayerEloAsync(loserId, newLoserElo);
 
         // Send new elo the clients.
-        winner.Client!.SendPacket(new EloPacket { Elo = newWinnerElo });
-        loser.Client!.SendPacket(new EloPacket { Elo = newLoserElo });
+        winner.Client?.SendPacket(new EloPacket { Elo = newWinnerElo });
+        loser.Client?.SendPacket(new EloPacket { Elo = newLoserElo });
     }
 
     private int CalculateElo(int playerElo, int opponentElo, int playerCarRating, int opponentCarRating, bool hasWon, int racesCompleted)
@@ -249,7 +261,10 @@ public class TougeSession
 
     public void SendSessionState(SessionState hudState)
     {
-        Challenger.Client!.SendPacket(new SessionStatePacket { Result1 = challengerStandings[0], Result2 = challengerStandings[1], Result3 = challengerStandings[2], SessionState = (int)hudState });
-        Challenged.Client!.SendPacket(new SessionStatePacket { Result1 = challengedStandings[0], Result2 = challengedStandings[1], Result3 = challengedStandings[2], SessionState = (int)hudState });
+        Log.Debug("[TougeSession] SendSessionState state={HudState}. ChallengerClient={ChallengerConnected} ChallengedClient={ChallengedConnected}",
+            hudState, Challenger.Client != null, Challenged.Client != null);
+
+        Challenger.Client?.SendPacket(new SessionStatePacket { Result1 = challengerStandings[0], Result2 = challengerStandings[1], Result3 = challengerStandings[2], SessionState = (int)hudState });
+        Challenged.Client?.SendPacket(new SessionStatePacket { Result1 = challengedStandings[0], Result2 = challengedStandings[1], Result3 = challengedStandings[2], SessionState = (int)hudState });
     }
 }
