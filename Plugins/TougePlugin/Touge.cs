@@ -125,11 +125,23 @@ public class Touge : BackgroundService, IHostedService
 
         // Check if the player is registered in the database
         string playerId = client.Guid.ToString();
-        database.CheckPlayerAsync(playerId);
+        _ = CheckPlayerSafeAsync(playerId);
 
         if (_configuration.SteamAPIKey != null)
         {
             LoadAvatar(client);
+        }
+    }
+
+    private async Task CheckPlayerSafeAsync(string playerId)
+    {
+        try
+        {
+            await database.CheckPlayerAsync(playerId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[Touge] Failed to register player {PlayerId}", playerId);
         }
     }
 
@@ -158,34 +170,41 @@ public class Touge : BackgroundService, IHostedService
 
     private async void OnInitializationPacket(ACTcpClient client, InitializationPacket packet)
     {
-        Log.Debug("[Touge] Initialization packet received from {ClientName} ({SessionId}) IsConnected={IsConnected} HasSentFirstUpdate={HasSentFirstUpdate}",
-            client.Name, client.SessionId, client.IsConnected, client.HasSentFirstUpdate);
+        try
+        {
+            Log.Debug("[Touge] Initialization packet received from {ClientName} ({SessionId}) IsConnected={IsConnected} HasSentFirstUpdate={HasSentFirstUpdate}",
+                client.Name, client.SessionId, client.IsConnected, client.HasSentFirstUpdate);
 
-        string playerId = client.Guid.ToString();
-        var(elo, racesCompleted) = await database.GetPlayerStatsAsync(playerId);
+            string playerId = client.Guid.ToString();
+            var(elo, racesCompleted) = await database.GetPlayerStatsAsync(playerId);
 
-        char delimiter = '`';
+            char delimiter = '`';
 
-        var selectedCourseNames = tougeCourses
-            .Select(course => course.Value.Name ?? "")
-            .ToArray();
+            var selectedCourseNames = tougeCourses
+                .Select(course => course.Value.Name ?? "")
+                .ToArray();
 
-        string courseNames = string.Join(delimiter, selectedCourseNames);
+            string courseNames = string.Join(delimiter, selectedCourseNames);
 
-        bool showToggle = _configuration.EnableOutrunRace && _configuration.EnableCourseRace;
+            bool showToggle = _configuration.EnableOutrunRace && _configuration.EnableCourseRace;
 
-        Log.Debug("[Touge] Initialization response before send. Name={ClientName} SessionId={SessionId} Elo={Elo} Races={Races} UseTrackFinish={UseTrackFinish} CourseCount={CourseCount} IsConnected={IsConnected}",
-            client.Name, client.SessionId, elo, racesCompleted, _configuration.UseTrackFinish, selectedCourseNames.Length, client.IsConnected);
+            Log.Debug("[Touge] Initialization response before send. Name={ClientName} SessionId={SessionId} Elo={Elo} Races={Races} UseTrackFinish={UseTrackFinish} CourseCount={CourseCount} IsConnected={IsConnected}",
+                client.Name, client.SessionId, elo, racesCompleted, _configuration.UseTrackFinish, selectedCourseNames.Length, client.IsConnected);
 
-        client.SendPacket(new InitializationPacket {
-            Elo = elo,
-            RacesCompleted = racesCompleted,
-            UseTrackFinish = _configuration.UseTrackFinish,
-            DiscreteMode = _configuration.DiscreteMode,
-            LoadSteamAvatars = _loadSteamAvatars,
-            CourseNames = courseNames,
-            ShowRaceTypeToggle = showToggle,
-        });
+            client.SendPacket(new InitializationPacket {
+                Elo = elo,
+                RacesCompleted = racesCompleted,
+                UseTrackFinish = _configuration.UseTrackFinish,
+                DiscreteMode = _configuration.DiscreteMode,
+                LoadSteamAvatars = _loadSteamAvatars,
+                CourseNames = courseNames,
+                ShowRaceTypeToggle = showToggle,
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[Touge] Error handling initialization packet from {ClientName} ({SessionId})", client.Name, client.SessionId);
+        }
     }
 
     private void OnInvitePacket(ACTcpClient client, InvitePacket packet)
@@ -220,68 +239,75 @@ public class Touge : BackgroundService, IHostedService
 
     private async void OnLobbyStatusPacketAsync(ACTcpClient client, LobbyStatusPacket packet)
     {
-        Log.Debug("[Touge] Lobby status packet received from {ClientName} ({SessionId}) IsConnected={IsConnected}",
-            client.Name, client.SessionId, client.IsConnected);
-
-        // Find if there is a player close to the client.
-        List<EntryCar>? closestCars = GetSession(client!.EntryCar).FindClosestCars(5);
-
-        var tasks = closestCars.Select(async car =>
+        try
         {
-            var (elo, _) = await database.GetPlayerStatsAsync(car.Client!.Guid!.ToString());
+            Log.Debug("[Touge] Lobby status packet received from {ClientName} ({SessionId}) IsConnected={IsConnected}",
+                client.Name, client.SessionId, client.IsConnected);
 
-            return new Dictionary<string, object>
+            // Find if there is a player close to the client.
+            List<EntryCar>? closestCars = GetSession(client!.EntryCar).FindClosestCars(5);
+
+            var tasks = closestCars.Select(async car =>
             {
-                { "name", car.Client!.Name! },
-                { "id", car.Client!.Guid! },
-                { "inRace", IsInTougeSession(car) },
-                { "elo", elo }
-            };
-        });
+                var (elo, _) = await database.GetPlayerStatsAsync(car.Client!.Guid!.ToString());
 
-        var playerStatsList = (await Task.WhenAll(tasks)).ToList();
-
-        int nearbyPlayersCount = playerStatsList.Count;
-        if (nearbyPlayersCount < 5)
-        {
-            // Add dummy values to fill up to 5 entries
-            for (int i = nearbyPlayersCount; i < 5; i++)
-            {
-                playerStatsList.Add(new Dictionary<string, object>
+                return new Dictionary<string, object>
                 {
-                    { "name", "" },
-                    { "id", (ulong)0 },
-                    { "inRace", false },
-                    { "elo", -1 }
-                });
-            }
-        }
+                    { "name", car.Client!.Name! },
+                    { "id", car.Client!.Guid! },
+                    { "inRace", IsInTougeSession(car) },
+                    { "elo", elo }
+                };
+            });
 
-        // Send a packet back to the client
-        // Close your eyes, this is not going to be pretty :(
-        client.SendPacket(new LobbyStatusPacket
+            var playerStatsList = (await Task.WhenAll(tasks)).ToList();
+
+            int nearbyPlayersCount = playerStatsList.Count;
+            if (nearbyPlayersCount < 5)
+            {
+                // Add dummy values to fill up to 5 entries
+                for (int i = nearbyPlayersCount; i < 5; i++)
+                {
+                    playerStatsList.Add(new Dictionary<string, object>
+                    {
+                        { "name", "" },
+                        { "id", (ulong)0 },
+                        { "inRace", false },
+                        { "elo", -1 }
+                    });
+                }
+            }
+
+            // Send a packet back to the client
+            // Close your eyes, this is not going to be pretty :(
+            client.SendPacket(new LobbyStatusPacket
+            {
+                NearbyPlayerName1 = (string)playerStatsList[0]["name"],
+                NearbyPlayerId1 = (ulong)playerStatsList[0]["id"],
+                NearbyPlayerInRace1 = (bool)playerStatsList[0]["inRace"],
+                NearbyPlayerElo1 = (int)playerStatsList[0]["elo"],
+                NearbyPlayerName2 = (string)playerStatsList[1]["name"],
+                NearbyPlayerId2 = (ulong)playerStatsList[1]["id"],
+                NearbyPlayerInRace2 = (bool)playerStatsList[1]["inRace"],
+                NearbyPlayerElo2 = (int)playerStatsList[1]["elo"],
+                NearbyPlayerName3 = (string)playerStatsList[2]["name"],
+                NearbyPlayerId3 = (ulong)playerStatsList[2]["id"],
+                NearbyPlayerInRace3 = (bool)playerStatsList[2]["inRace"],
+                NearbyPlayerElo3 = (int)playerStatsList[2]["elo"],
+                NearbyPlayerName4 = (string)playerStatsList[3]["name"],
+                NearbyPlayerId4 = (ulong)playerStatsList[3]["id"],
+                NearbyPlayerInRace4 = (bool)playerStatsList[3]["inRace"],
+                NearbyPlayerElo4 = (int)playerStatsList[3]["elo"],
+                NearbyPlayerName5 = (string)playerStatsList[4]["name"],
+                NearbyPlayerId5 = (ulong)playerStatsList[4]["id"],
+                NearbyPlayerInRace5 = (bool)playerStatsList[4]["inRace"],
+                NearbyPlayerElo5 = (int)playerStatsList[4]["elo"],
+            });
+        }
+        catch (Exception ex)
         {
-            NearbyPlayerName1 = (string)playerStatsList[0]["name"],
-            NearbyPlayerId1 = (ulong)playerStatsList[0]["id"],
-            NearbyPlayerInRace1 = (bool)playerStatsList[0]["inRace"],
-            NearbyPlayerElo1 = (int)playerStatsList[0]["elo"],
-            NearbyPlayerName2 = (string)playerStatsList[1]["name"],
-            NearbyPlayerId2 = (ulong)playerStatsList[1]["id"],
-            NearbyPlayerInRace2 = (bool)playerStatsList[1]["inRace"],
-            NearbyPlayerElo2 = (int)playerStatsList[1]["elo"],
-            NearbyPlayerName3 = (string)playerStatsList[2]["name"],
-            NearbyPlayerId3 = (ulong)playerStatsList[2]["id"],
-            NearbyPlayerInRace3 = (bool)playerStatsList[2]["inRace"],
-            NearbyPlayerElo3 = (int)playerStatsList[2]["elo"],
-            NearbyPlayerName4 = (string)playerStatsList[3]["name"],
-            NearbyPlayerId4 = (ulong)playerStatsList[3]["id"],
-            NearbyPlayerInRace4 = (bool)playerStatsList[3]["inRace"],
-            NearbyPlayerElo4 = (int)playerStatsList[3]["elo"],
-            NearbyPlayerName5 = (string)playerStatsList[4]["name"],
-            NearbyPlayerId5 = (ulong)playerStatsList[4]["id"],
-            NearbyPlayerInRace5 = (bool)playerStatsList[4]["inRace"],
-            NearbyPlayerElo5 = (int)playerStatsList[4]["elo"],
-        });
+            Log.Error(ex, "[Touge] Error handling lobby status packet from {ClientName} ({SessionId})", client.Name, client.SessionId);
+        }
     }
 
     private void OnForfeitPacket(ACTcpClient sender, ForfeitPacket packet)

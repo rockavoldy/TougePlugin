@@ -27,4 +27,18 @@ public class PostgresConnectionFactory(string connectionString) : IDbConnectionF
 
         return Task.CompletedTask;
     }
+
+    public void EnsurePlayerExists(DbConnection connection, string playerId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT INTO Players (PlayerId, Rating, RacesCompleted)
+            VALUES (@PlayerId, @Rating, @RacesCompleted)
+            ON CONFLICT (PlayerId) DO NOTHING;
+        ";
+        command.AddParameter("@PlayerId", playerId);
+        command.AddParameter("@Rating", 1000);
+        command.AddParameter("@RacesCompleted", 0);
+        command.ExecuteNonQuery();
+    }
 }

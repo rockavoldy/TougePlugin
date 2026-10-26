@@ -35,4 +35,17 @@ public class SqliteConnectionFactory : IDbConnectionFactory
         }
         return Task.CompletedTask;
     }
+
+    public void EnsurePlayerExists(DbConnection connection, string playerId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT OR IGNORE INTO Players (PlayerId, Rating, RacesCompleted)
+            VALUES (@PlayerId, @Rating, @RacesCompleted);
+        ";
+        command.AddParameter("@PlayerId", playerId);
+        command.AddParameter("@Rating", 1000);
+        command.AddParameter("@RacesCompleted", 0);
+        command.ExecuteNonQuery();
+    }
 }

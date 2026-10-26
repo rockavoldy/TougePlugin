@@ -19,6 +19,9 @@ public class EntryCarTougeSession
     private readonly Func<RulesetType, ITougeRuleset> _rulesetFactory;
     private readonly TougeConfiguration _configuration;
 
+    // Serializes session attach/detach across both participants of an invite.
+    private static readonly object SessionStateLock = new();
+
     internal TougeSession? CurrentSession { get; set; }
 
     public EntryCarTougeSession(EntryCar entryCar, EntryCarManager entryCarManager, Touge plugin, TougeSession.Factory tougeSessionFactory, Func<RulesetType, ITougeRuleset> rulesetFactory, TougeConfiguration configuration)
@@ -34,7 +37,27 @@ public class EntryCarTougeSession
 
     private void OnResetInvoked(EntryCar sender, EventArgs args)
     {
-        CurrentSession = null;
+        TougeSession? session;
+        lock (SessionStateLock)
+        {
+            session = CurrentSession;
+            CurrentSession = null;
+        }
+
+        if (session == null)
+            return;
+
+        EntryCar opponent = ReferenceEquals(sender, session.Challenger) ? session.Challenged : session.Challenger;
+        _plugin.GetSession(opponent).ClearSessionIfCurrent(session);
+    }
+
+    internal void ClearSessionIfCurrent(TougeSession session)
+    {
+        lock (SessionStateLock)
+        {
+            if (ReferenceEquals(CurrentSession, session))
+                CurrentSession = null;
+        }
     }
 
     internal EntryCar? FindNearbyCar()
@@ -94,62 +117,76 @@ public class EntryCarTougeSession
 
         void Reply(string message)
         {
-            Touge.SendNotification(_entryCar.Client!, message);
+            Touge.SendNotification(_entryCar.Client, message);
         }
 
-        var currentSession = CurrentSession;
-        if (currentSession != null)
+        if (!_plugin.tougeCourses.TryGetValue(courseName, out Course course))
         {
-            if (currentSession.IsActive)
-                Reply("You are already in an active touge session.");
-            else
-                Reply("You have a pending session invite.");
+            Reply("Course not found.");
+            return;
         }
-        else
+
+        var ruleset = _rulesetFactory(_configuration.RuleSetType);
+        RaceType raceType = isCourse ? RaceType.Course : RaceType.Outrun;
+
+        TougeSession? session = null;
+        string? rejectMessage = null;
+
+        lock (SessionStateLock)
         {
-            if (car == _entryCar)
-                Reply("You cannot invite yourself to a session.");
+            if (CurrentSession != null)
+            {
+                rejectMessage = CurrentSession.IsActive
+                    ? "You are already in an active touge session."
+                    : "You have a pending session invite.";
+            }
+            else if (car == _entryCar)
+            {
+                rejectMessage = "You cannot invite yourself to a session.";
+            }
             else
             {
-                currentSession = _plugin.GetSession(car).CurrentSession;
-                if (currentSession != null)
+                var targetSession = _plugin.GetSession(car).CurrentSession;
+                if (targetSession != null)
                 {
-                    if (currentSession.IsActive)
-                        Reply("This car is already in a touge session.");
-                    else
-                        Reply("This car has a pending touge session invite.");
+                    rejectMessage = targetSession.IsActive
+                        ? "This car is already in a touge session."
+                        : "This car has a pending touge session invite.";
                 }
                 else
                 {
-                    // Get rules and course.
-                    var ruleset = _rulesetFactory(_configuration.RuleSetType);
-                    Course course = _plugin.tougeCourses[courseName];
-                    RaceType raceType = isCourse ? RaceType.Course : RaceType.Outrun;
-
-                    // Create a new TougeSession instance and set this for both cars.
-                    currentSession = _tougeSessionFactory(_entryCar, car, ruleset, course, raceType);
-                    CurrentSession = currentSession;
-                    _plugin.GetSession(car).CurrentSession = currentSession;
-
-                    // Get sender's elo
-                    var (senderElo, _) = await _plugin.database.GetPlayerStatsAsync(_entryCar.Client!.Guid!.ToString());
-
-                    car.Client?.SendPacket(new InvitePacket { InviteSenderName = _entryCar.Client!.Name!, InviteSenderElo = senderElo, InviteSenderId = _entryCar.Client!.Guid.ToString(), CourseName = courseName });
-
-                    _ = Task.Delay(10000).ContinueWith(_ =>
-                    {
-                        if (!currentSession.IsActive)
-                        {
-                            CurrentSession = null;
-                            _plugin.GetSession(car).CurrentSession = null;
-
-                            var timeoutMessage = "Invite was not accepted in time.";
-                            Touge.SendNotification(_entryCar.Client, timeoutMessage);
-                        }
-                    });
+                    // Create a new TougeSession instance and attach it to both cars.
+                    session = _tougeSessionFactory(_entryCar, car, ruleset, course, raceType);
+                    CurrentSession = session;
+                    _plugin.GetSession(car).CurrentSession = session;
                 }
             }
         }
+
+        if (rejectMessage != null)
+        {
+            Reply(rejectMessage);
+            return;
+        }
+
+        // Get sender's elo
+        var (senderElo, _) = await _plugin.database.GetPlayerStatsAsync(_entryCar.Client!.Guid!.ToString());
+
+        car.Client?.SendPacket(new InvitePacket { InviteSenderName = _entryCar.Client!.Name!, InviteSenderElo = senderElo, InviteSenderId = _entryCar.Client!.Guid.ToString(), CourseName = courseName });
+
+        _ = Task.Delay(10000).ContinueWith(_ =>
+        {
+            lock (SessionStateLock)
+            {
+                if (!session!.IsActive && ReferenceEquals(CurrentSession, session))
+                {
+                    CurrentSession = null;
+                    _plugin.GetSession(car).ClearSessionIfCurrent(session!);
+
+                    Touge.SendNotification(_entryCar.Client, "Invite was not accepted in time.");
+                }
+            }
+        });
     }
 
 

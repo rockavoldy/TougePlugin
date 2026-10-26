@@ -104,7 +104,7 @@ public class Race
         {
             Log.Error(e, "[TougeRace {RaceId}] Error while running race", _raceId);
             SendMessage("There was an error while runnning the race.");
-            return RaceResult.Tie();
+            return RaceResult.Error();
         }
         finally
         {
