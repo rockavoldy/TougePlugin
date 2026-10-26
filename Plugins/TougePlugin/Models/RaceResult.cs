@@ -5,7 +5,8 @@ public enum RaceOutcome
 {
     Win,
     Tie,
-    Disconnected
+    Disconnected,
+    Error
 }
 
 public class RaceResult
@@ -22,4 +23,5 @@ public class RaceResult
     public static RaceResult Tie() => new RaceResult(RaceOutcome.Tie);
     public static RaceResult Disconnected(EntryCar? remainingPlayer) => new RaceResult(RaceOutcome.Disconnected, remainingPlayer);
     public static RaceResult Win(EntryCar winner) => new RaceResult(RaceOutcome.Win, winner);
+    public static RaceResult Error() => new RaceResult(RaceOutcome.Error);
 }

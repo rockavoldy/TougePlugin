@@ -14,6 +14,7 @@ public class CatAndMouseRuleset : ITougeRuleset
         int challengedPoints = 0;
 
         int round = 0;
+        int scoredRound = 0;
 
         while (challengerPoints < 2 && challengedPoints < 2)
         {
@@ -28,9 +29,15 @@ public class CatAndMouseRuleset : ITougeRuleset
                 return RaceResult.Disconnected(result.ResultCar!);
             }
 
+            if (result.Outcome == RaceOutcome.Error)
+            {
+                return result;
+            }
+
             if (result.Outcome == RaceOutcome.Win)
             {
-                session.ApplyRaceResultToStandings(result, round);
+                session.ApplyRaceResultToStandings(result, scoredRound);
+                scoredRound++;
                 await Task.Delay(TougeSession.coolDownTime);
 
                 if (result.ResultCar == session.Challenger)

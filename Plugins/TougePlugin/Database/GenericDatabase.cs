@@ -30,25 +30,9 @@ public class GenericDatabase(IDbConnectionFactory factory) : IDatabase
     {
         // Query the database with clientId.
         await using var connection = factory.CreateConnection();
-        connection.Open();
+        await connection.OpenAsync();
 
-        // First, check if the player exists
-        var command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM Players WHERE PlayerId = @PlayerId";
-        command.AddParameter("@PlayerId", playerId);
-
-        int playerExists = Convert.ToInt32(command.ExecuteScalar());
-
-        // If player doesn't exist, add them with default values
-        if (playerExists == 0)
-        {
-            var insertCommand = connection.CreateCommand();
-            insertCommand.CommandText = "INSERT INTO Players (PlayerId, Rating, RacesCompleted) VALUES (@PlayerId, @Rating, @RacesCompleted)";
-            insertCommand.AddParameter("@PlayerId", playerId);
-            insertCommand.AddParameter("@Rating", 1000); // Default ELO rating
-            insertCommand.AddParameter("@RacesCompleted", 0);
-            insertCommand.ExecuteNonQuery();
-        }
+        factory.EnsurePlayerExists(connection, playerId);
     }
 
     public async Task<(int Rating, int RacesCompleted)> GetPlayerStatsAsync(string playerId)

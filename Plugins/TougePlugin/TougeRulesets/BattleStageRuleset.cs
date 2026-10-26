@@ -27,45 +27,49 @@ public class BattleStageRuleset : ITougeRuleset
         // Run race 1.
         RaceResult result1 = await session.RunRaceAsync(session.Challenger, session.Challenged);
 
-        // If both players are still connected. Run race 2.
-        if (result1.Outcome != RaceOutcome.Disconnected)
+        // Abort immediately on disconnect or error.
+        if (result1.Outcome != RaceOutcome.Win && result1.Outcome != RaceOutcome.Tie)
         {
-            session.ApplyRaceResultToStandings(result1, 0);
-            await Task.Delay(TougeSession.coolDownTime);
-            // If players are still connected, always start second race.
-            RaceResult result2 = await session.RunRaceAsync(session.Challenged, session.Challenger);
-
-            if (result2.Outcome != RaceOutcome.Disconnected)
-            {
-                session.ApplyRaceResultToStandings(result2, 1);
-                await Task.Delay(TougeSession.coolDownTime);
-
-                // Both races are finished. Check what to return.
-                if (session.IsTie(result1, result2))
-                {
-                    return RaceResult.Tie();
-                }
-                else
-                {
-                    // Its either 0-1 or 0-2.
-                    EntryCar winner = GetWinner(result1, result2);
-                    return RaceResult.Win(winner);
-                }
-            }
-            else
-            {
-                // Someone disconnected or forfeited.
-                // Check if they won the first race or not.
-                if (result2.ResultCar != null && result1.Outcome == RaceOutcome.Win && result1.ResultCar != result2.ResultCar)
-                {
-                    // The player who disconnected was not leading the standings.
-                    // So the other player (who won race 1, is the overall winner)
-                    return RaceResult.Win(result1.ResultCar!);
-                }
-                return RaceResult.Disconnected(result2.ResultCar!);
-            }
+            return result1;
         }
-        return RaceResult.Disconnected(result1.ResultCar!);
+
+        session.ApplyRaceResultToStandings(result1, 0);
+        await Task.Delay(TougeSession.coolDownTime);
+        // If players are still connected, always start second race.
+        RaceResult result2 = await session.RunRaceAsync(session.Challenged, session.Challenger);
+
+        if (result2.Outcome == RaceOutcome.Disconnected)
+        {
+            // Someone disconnected or forfeited.
+            // Check if they won the first race or not.
+            if (result1.Outcome == RaceOutcome.Win && result1.ResultCar != result2.ResultCar)
+            {
+                // The player who disconnected was not leading the standings.
+                // So the other player (who won race 1, is the overall winner)
+                return RaceResult.Win(result1.ResultCar!);
+            }
+            return result2;
+        }
+
+        if (result2.Outcome == RaceOutcome.Error)
+        {
+            return result2;
+        }
+
+        session.ApplyRaceResultToStandings(result2, 1);
+        await Task.Delay(TougeSession.coolDownTime);
+
+        // Both races are finished. Check what to return.
+        if (session.IsTie(result1, result2))
+        {
+            return RaceResult.Tie();
+        }
+        else
+        {
+            // Its either 0-1 or 0-2.
+            EntryCar winner = GetWinner(result1, result2);
+            return RaceResult.Win(winner);
+        }
     }
 
     private static EntryCar GetWinner(RaceResult result1, RaceResult result2)

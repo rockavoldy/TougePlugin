@@ -13,6 +13,7 @@ public class TougeSession
     public EntryCar Challenged { get; }
 
     private int winCounter = 0;
+    private int _started;
     private readonly int[] challengerStandings = [(int)RaceResultCounter.Tbd, (int)RaceResultCounter.Tbd, (int)RaceResultCounter.Tbd];
     private readonly int[] challengedStandings = [(int)RaceResultCounter.Tbd, (int)RaceResultCounter.Tbd, (int)RaceResultCounter.Tbd];
 
@@ -36,7 +37,7 @@ public class TougeSession
         NoUpdate = 5,
     }
 
-    public bool IsActive { get; private set; }
+    public bool IsActive => Volatile.Read(ref _started) == 1;
     public Race? ActiveRace = null;
 
     private readonly EntryCarManager _entryCarManager;
@@ -69,9 +70,8 @@ public class TougeSession
         Log.Debug("[TougeSession] StartAsync requested. Challenger={ChallengerName} ({ChallengerSessionId}) Challenged={ChallengedName} ({ChallengedSessionId}) IsActive={IsActive}",
             Challenger.Client?.Name, Challenger.SessionId, Challenged.Client?.Name, Challenged.SessionId, IsActive);
 
-        if (!IsActive)
+        if (Interlocked.Exchange(ref _started, 1) == 0)
         {
-            IsActive = true;
             _ = Task.Run(TougeSessionAsync);
         }
 
@@ -87,10 +87,10 @@ public class TougeSession
         {
             RaceResult result = await _ruleset.RunSessionAsync(this);
 
-            if (result.Outcome != RaceOutcome.Disconnected)
+            if (result.Outcome == RaceOutcome.Win)
             {
                 UpdateStandings(result.ResultCar!, 2, SessionState.Finished);
-                UpdateEloAsync(result.ResultCar!);
+                await UpdateEloAsync(result.ResultCar!);
 
                 EntryCar loser = result.ResultCar! == Challenged ? Challenger : Challenged;
                 string loserName = loser.Client?.Name!;
@@ -148,8 +148,8 @@ public class TougeSession
 
     private async Task FinishTougeSessionAsync()
     {
-        _plugin.GetSession(Challenger).CurrentSession = null;
-        _plugin.GetSession(Challenged).CurrentSession = null;
+        _plugin.GetSession(Challenger).ClearSessionIfCurrent(this);
+        _plugin.GetSession(Challenged).ClearSessionIfCurrent(this);
 
         await Task.Delay(coolDownTime); // Small cooldown to shortly keep scoreboard up after session has ended.
 
@@ -159,30 +159,43 @@ public class TougeSession
         SendSessionState(SessionState.Off);
     }
 
-    private async void UpdateEloAsync(EntryCar? winner)
+    private async Task UpdateEloAsync(EntryCar? winner)
     {
-        if (winner == null) return;
-        var loser = (winner == Challenger) ? Challenged : Challenger;
+        try
+        {
+            if (winner == null) return;
+            var loser = (winner == Challenger) ? Challenged : Challenger;
 
-        string winnerId = winner.Client!.Guid.ToString();
-        string loserId = loser.Client!.Guid.ToString();
+            if (winner.Client == null || loser.Client == null)
+            {
+                Log.Warning("[TougeSession] Skipping elo update because a client is unavailable.");
+                return;
+            }
 
-        int winnerCarRating = GetCarRating(winner.Model);
-        int loserCarRating = GetCarRating(loser.Model);
+            string winnerId = winner.Client.Guid.ToString();
+            string loserId = loser.Client.Guid.ToString();
 
-        var (winnerElo, winnerRacesCompleted) = await _plugin.database.GetPlayerStatsAsync(winnerId);
-        var (loserElo, loserRacesCompleted) = await _plugin.database.GetPlayerStatsAsync(loserId);
+            int winnerCarRating = GetCarRating(winner.Model);
+            int loserCarRating = GetCarRating(loser.Model);
 
-        int newWinnerElo = CalculateElo(winnerElo, loserElo, winnerCarRating, loserCarRating, true, winnerRacesCompleted);
-        int newLoserElo = CalculateElo(loserElo, winnerElo, loserCarRating, winnerCarRating, false, loserRacesCompleted);
+            var (winnerElo, winnerRacesCompleted) = await _plugin.database.GetPlayerStatsAsync(winnerId);
+            var (loserElo, loserRacesCompleted) = await _plugin.database.GetPlayerStatsAsync(loserId);
 
-        // Update elo in the database.
-        await _plugin.database.UpdatePlayerEloAsync(winnerId, newWinnerElo);
-        await _plugin.database.UpdatePlayerEloAsync(loserId, newLoserElo);
+            int newWinnerElo = CalculateElo(winnerElo, loserElo, winnerCarRating, loserCarRating, true, winnerRacesCompleted);
+            int newLoserElo = CalculateElo(loserElo, winnerElo, loserCarRating, winnerCarRating, false, loserRacesCompleted);
 
-        // Send new elo the clients.
-        winner.Client?.SendPacket(new EloPacket { Elo = newWinnerElo });
-        loser.Client?.SendPacket(new EloPacket { Elo = newLoserElo });
+            // Update elo in the database.
+            await _plugin.database.UpdatePlayerEloAsync(winnerId, newWinnerElo);
+            await _plugin.database.UpdatePlayerEloAsync(loserId, newLoserElo);
+
+            // Send new elo the clients.
+            winner.Client?.SendPacket(new EloPacket { Elo = newWinnerElo });
+            loser.Client?.SendPacket(new EloPacket { Elo = newLoserElo });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[TougeSession] Error updating elo");
+        }
     }
 
     private int CalculateElo(int playerElo, int opponentElo, int playerCarRating, int opponentCarRating, bool hasWon, int racesCompleted)
