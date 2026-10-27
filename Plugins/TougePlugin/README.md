@@ -165,12 +165,6 @@ distance. Must be a positive integer.
 **Description:** Enable course races (races with a defined finish line). At least one of
 `EnableCourseRace` / `EnableOutrunRace` must be `true`.
 
-##### `GhostBystanderCollisions`
-**Type:** `bool`  
-**Default:** `true`  
-**Description:** Ghost (disable collision) other real players against the two racers during an
-active race so bystanders can't interfere. AI traffic still collides.
-
 #### HUD & Extras
 
 ##### `DiscreteMode`
@@ -219,7 +213,6 @@ OutrunLeadTimeout: 120
 OutrunLeadDistance: 750
 EnableOutrunRace: false
 EnableCourseRace: true
-GhostBystanderCollisions: true
 DiscreteMode: false
 SteamAPIKey: null
 IsDbLocalMode: true
@@ -235,8 +228,8 @@ PostgresqlConnectionString: null
 
 - Requires Content Manager with recent version of CSP enabled.
 - This is a AssettoServer plugin.
-	- Tested on [v0.0.55-pre44](https://github.com/compujuckel/AssettoServer/releases/tag/v0.0.55-pre44)
-	- Requires .NET 11 SDK to build (matches the AssettoServer pre44 toolchain).
+	- Tested on [v0.0.55-pre45](https://github.com/compujuckel/AssettoServer/releases/tag/v0.0.55-pre45)
+	- Requires .NET 11 SDK to build (matches the AssettoServer pre45 toolchain).
 - UI and other plugin features may evolve — stay tuned for updates.
 - See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed description of the flow and internals.
 

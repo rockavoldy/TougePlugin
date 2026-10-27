@@ -55,7 +55,6 @@ public class Touge : BackgroundService, IHostedService
         ProvideScript("teleport.lua");
         ProvideScript("hud.lua");
         ProvideScript("timing.lua");
-        ProvideScript("collision.lua");
 
         // Set up database connection
         if (_configuration.IsDbLocalMode)

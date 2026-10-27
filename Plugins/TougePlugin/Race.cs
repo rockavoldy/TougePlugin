@@ -40,9 +40,6 @@ public class Race
     private bool IsGo = false;
     private volatile bool _cancelled;
 
-    private readonly List<EntryCar> _ghostedBystanders = [];
-    private bool _collisionsGhosted = false;
-
     private readonly IRaceType _raceType;
     private readonly Course _course;
 
@@ -213,9 +210,8 @@ public class Race
                         }
                     }
                     _ = SendTimedMessageAsync("Go!", true);
-                    Log.Information("[TougeRace {RaceId}] Countdown reached Go, enabling race collisions", _raceId);
+                    Log.Information("[TougeRace {RaceId}] Countdown reached Go", _raceId);
                     IsGo = true;
-                    EnableRaceCollisions();
                     break;
                 }
                 if (await WaitWithForfeitAsync(Task.Delay(1000)))
@@ -234,81 +230,6 @@ public class Race
         // General clean up
         if (Leader.Client is { } leaderClient) leaderClient.Disconnecting -= OnClientDisconnected;
         if (Follower.Client is { } followerClient) followerClient.Disconnecting -= OnClientDisconnected;
-        DisableRaceCollisions();
-    }
-
-    // Ghosts the two racers against every other real (non-AI) player currently on the server,
-    // so bystanders driving the same road can't disrupt the race. AI traffic is left untouched.
-    private void EnableRaceCollisions()
-    {
-        if (!Configuration.GhostBystanderCollisions || _collisionsGhosted)
-            return;
-
-        _collisionsGhosted = true;
-
-        var bystanders = _entryCarManager.EntryCars
-            .Where(car => car.Client != null && !car.AiControlled && car != Leader && car != Follower);
-
-        Log.Debug("[TougeRace {RaceId}] Ghosting {BystanderCount} bystanders against racers", _raceId, bystanders.Count());
-
-        foreach (var bystander in bystanders)
-        {
-            GhostPair(bystander, false);
-            _ghostedBystanders.Add(bystander);
-        }
-
-        _entryCarManager.ClientConnected += OnBystanderConnected;
-    }
-
-    private void DisableRaceCollisions()
-    {
-        if (!_collisionsGhosted)
-            return;
-
-        _entryCarManager.ClientConnected -= OnBystanderConnected;
-
-        foreach (var bystander in _ghostedBystanders)
-        {
-            if (bystander.Client != null)
-                GhostPair(bystander, true);
-        }
-
-        _ghostedBystanders.Clear();
-        _collisionsGhosted = false;
-    }
-
-    private void OnBystanderConnected(ACTcpClient client, EventArgs args)
-    {
-        var car = client.EntryCar;
-        if (car.AiControlled || car == Leader || car == Follower)
-            return;
-
-        GhostPair(car, false);
-        _ghostedBystanders.Add(car);
-    }
-
-    // Toggles collisions between a bystander and both racers, on both ends.
-    private void GhostPair(EntryCar bystander, bool enabled)
-    {
-        Log.Debug("[TougeRace {RaceId}] GhostPair bystander={BystanderSessionId} against leader={LeaderSessionId} follower={FollowerSessionId} enabled={Enabled} (bystanderClient={BystanderConnected}, leaderClient={LeaderConnected}, followerClient={FollowerConnected})",
-            _raceId, bystander.SessionId, Leader.SessionId, Follower.SessionId, enabled,
-            bystander.Client != null, Leader.Client != null, Follower.Client != null);
-
-        var bystanderClient = bystander.Client;
-        var leaderClient = Leader.Client;
-        var followerClient = Follower.Client;
-
-        if (bystanderClient == null || leaderClient == null || followerClient == null)
-        {
-            Log.Warning("[TougeRace {RaceId}] Skipping GhostPair because a client is unavailable. bystanderConnected={BystanderConnected} leaderConnected={LeaderConnected} followerConnected={FollowerConnected}",
-                _raceId, bystanderClient != null, leaderClient != null, followerClient != null);
-            return;
-        }
-
-        bystanderClient.SendPacket(new RaceCollisionPacket { TargetSessionId = Leader.SessionId, Enabled = enabled });
-        bystanderClient.SendPacket(new RaceCollisionPacket { TargetSessionId = Follower.SessionId, Enabled = enabled });
-        leaderClient.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
-        followerClient.SendPacket(new RaceCollisionPacket { TargetSessionId = bystander.SessionId, Enabled = enabled });
     }
 
     public void SendMessage(string message)

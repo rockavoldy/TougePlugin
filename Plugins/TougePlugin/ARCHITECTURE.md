@@ -5,7 +5,7 @@ responsibilities, and the full lifecycle from server startup through a completed
 head-to-head touge race (and Elo update).
 
 The plugin is written in C# for [AssettoServer](https://github.com/compujuckel/AssettoServer)
-(`v0.0.55-pre44`, .NET 11) and pairs a server-side driver with four Lua client scripts that
+(`v0.0.55-pre45`, .NET 11) and pairs a server-side driver with three Lua client scripts that
 are delivered to every connected player via CSP (Custom Shaders Patch) online events.
 
 ---
@@ -19,12 +19,12 @@ are delivered to every connected player via CSP (Custom Shaders Patch) online ev
 | `TougeConfiguration` + `TougeConfigurationValidator` | `TougeConfiguration.cs`, `TougeConfigurationValidator.cs` | Config model + FluentValidation rules (`plugin_touge_cfg.yml`). |
 | `EntryCarTougeSession` | `EntryCarTougeSession.cs` | Per-car session owner. Sends/accepts invites, starts sessions, finds nearby cars. |
 | `TougeSession` | `TougeSession.cs` | One match between two cars. Holds standings, runs the ruleset, applies results, computes Elo. |
-| `Race` | `Race.cs` | One single run (leader vs follower). Handles setup, teleport, countdown, collisions, forfeit, and delegates race logic to an `IRaceType`. |
+| `Race` | `Race.cs` | One single run (leader vs follower). Handles setup, teleport, countdown, forfeit, and delegates race logic to an `IRaceType`. |
 | `ITougeRuleset` (2 impls) | `TougeRulesets/` | Defines how many races make up a session and how a winner is decided. |
 | `IRaceType` (2 impls) | `RaceTypes/` | Defines the win condition of a single race (course vs outrun). |
 | `IDatabase` / `IDbConnectionFactory` | `Database/` | Player Elo persistence (SQLite local mode or PostgreSQL). |
 | Packets | `Packets/` | Serializable CSP online-event structs sent between server and client. |
-| Lua scripts | `lua/` | Client-side teleport, finish detection, collision control, and HUD. |
+| Lua scripts | `lua/` | Client-side teleport, finish detection, and HUD. |
 | Course models + YAML converters | `Models/`, `Serialization/` | Parse/validate `cfg/touge_course_setup.yml`. |
 
 ---
@@ -47,7 +47,6 @@ flowchart LR
         HUD[hud.lua] -->|AS_* events| T
         TIMER[timing.lua] -->|AS_Finish| T
         TP[teleport.lua] <-->|AS_Teleport| R
-        COL[collision.lua] <-->|TP_RaceCollision| R
     end
 
     T <-->|OnlineEvent packets| HUD
@@ -81,8 +80,8 @@ the Lua scripts under `lua/` are the reference client implementation of that con
 1. **Config sanity check** — `CheckConfiguration()` throws unless:
    - `extra_cfg.yml` has `EnableClientMessages = true`
    - `extra_cfg.yml` has `MinimumCSPVersion >= 1937`
-2. **Provide Lua scripts** — reads and registers `teleport.lua`, `hud.lua`, `timing.lua`,
-   `collision.lua` with the server's `CSPServerScriptProvider`, so they are pushed to every
+2. **Provide Lua scripts** — reads and registers `teleport.lua`, `hud.lua`, `timing.lua`
+   with the server's `CSPServerScriptProvider`, so they are pushed to every
    client automatically.
 3. **Database setup** —
    - `IsDbLocalMode == true` → `SqliteConnectionFactory("plugins/TougePlugin/database.db")`
@@ -276,7 +275,7 @@ flowchart TD
     F --> G[RunCountdownAsync: Ready / Set / Go]
     G --> H{IRaceType.RunRaceAsync}
     H --> I[RaceResult]
-    I --> J[FinishRace: unghost, cleanup]
+    I --> J[FinishRace: cleanup]
 ```
 
 ### 7.1 Setup (`SetUpRaceAsync`)
@@ -301,25 +300,18 @@ Loop through three signal stages ("Ready…", "Set…", "Go!"), 1 s apart. Each 
   - leader moved → follower wins immediately.
 - **Rolling start**: at the "Go!" stage, `IsValidRollingStartPos` requires the cars to be
   within 30 m of each other; otherwise restart.
-- At "Go!": set `IsGo = true` and `EnableRaceCollisions()`.
+- At "Go!": set `IsGo = true`.
 - Messages use `SendTimedMessageAsync` (sends to the higher-ping player first, delays by the
   ping difference) to keep the countdown fair across both screens.
 
-### 7.3 Collision ghosting
-
-When `GhostBystanderCollisions` is enabled, `EnableRaceCollisions` ghosts **both racers
-against every other real (non-AI) player** so bystanders cannot disrupt the run. It sends
-`TP_RaceCollision` (both racer → bystander and bystander → both racers) and hooks
-`ClientConnected` to ghost newly-joining players too. `DisableRaceCollisions` reverses it.
-
-### 7.4 Lap / finish events
+### 7.3 Lap / finish events
 
 `OnClientLapCompleted` updates the leader/follower lap flags and signals:
 - both finished → `SecondLapCompleted`
 - only leader finished → starts the outrun timer, then `SecondLapCompleted(false)`
 - follower finished first → `FollowerFirst`
 
-### 7.5 Forfeit / disconnect
+### 7.4 Forfeit / disconnect
 
 The `Disconnecting` event routes into `ForfeitPlayer`:
 - Sets `_cancelled`.
@@ -425,7 +417,6 @@ All packets are `OnlineEvent` messages. Direction legend:
 | `AS_FinishLine` | `FinishLinePacket.cs` | S→C | Two 2D points defining the custom finish line. |
 | `AS_Teleport` | `TeleportPacket.cs` | S→C | Move a car (position + heading). |
 | `AS_LockControls` | `LockControlsPacket.cs` | S→C | Lock/unlock user input during teleport. |
-| `TP_RaceCollision` | `RaceCollisionPacket.cs` | S→C | Toggle collision against a target session id (bystander ghosting). |
 
 ---
 
@@ -436,7 +427,6 @@ All packets are `OnlineEvent` messages. Direction legend:
 | `hud.lua` | Full HUD: Elo display/animation, invite menu (nearby list, course select, race-type toggle), incoming invites, standings, countdown/notifications, forfeit. Keybindings: `N` invite nearby, `I` invite menu, `M` accept, `H` hide tutorial, `F` hold-to-forfeit. Loads fonts/assets from `/static/TougePlugin/`. |
 | `teleport.lua` | Handles `AS_Teleport`: raycasts down to ground level, briefly disables collisions, locks controls 10 s, then `physics.setCarPosition`. Also implements `AS_LockControls`. |
 | `timing.lua` | Tracks `AS_FinishLine` points; on `AS_Finish { lookForFinish }` enables finish watching; per-frame segment-intersection test against the 2D line, sends `AS_Finish` up once crossed; reads `UseTrackFinish` from `AS_Initialization`. |
-| `collision.lua` | Handles `TP_RaceCollision`: maps a server `sessionID` to a local sim index and calls `physics.disableCarCollisions`. No-ops gracefully if the API is missing. |
 
 ---
 
@@ -449,7 +439,7 @@ All packets are `OnlineEvent` messages. Direction legend:
 4. **Invite** — challenger picks a nearby player (or GUID) and course; a shared `TougeSession`
    is created; recipient gets an invite card with a 10 s expiry.
 5. **Accept** — `StartAsync` → ruleset runs one or more races.
-6. **Race** — setup teleports both cars, countdown, ghost bystanders; the race type decides
+6. **Race** — setup teleports both cars, countdown; the race type decides
    the winner of each run.
 7. **Resolve** — ruleset decides the session winner, standings update, Elo recomputes and is
    broadcast, then the HUD resets after a short cooldown.

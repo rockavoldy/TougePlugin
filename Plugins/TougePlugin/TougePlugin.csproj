@@ -15,9 +15,6 @@
         <None Update="lua\timing.lua">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Update="lua\collision.lua">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
     <!-- HUD assets served to clients. Listed explicitly because the shared
