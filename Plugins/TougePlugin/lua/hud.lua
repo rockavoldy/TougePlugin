@@ -137,7 +137,7 @@ web.loadRemoteAssets(fontsURL, function(err, folder)
 end)
 
 -- Load countdown audio
-local countdownURL = baseUrl .. "countdown.zip"
+local countdownURL = baseUrl .. "countdown.zip?v=4-beeps"
 web.loadRemoteAssets(countdownURL, function(err, folder)
     if err then
         print("Failed to load countdown sound: " .. err)
@@ -160,6 +160,7 @@ function PlayCountdownSound()
     local ok, event = pcall(ac.AudioEvent.fromFile, { filename = countdownSoundPath, use3D = false, loop = false }, false)
     if ok and event ~= nil then
         countdownSoundEvent = event
+        event.volume = event.volume * 2
         event:start()
     end
 end
@@ -247,7 +248,7 @@ local notificationEvent = ac.OnlineEvent(
             hasIncomingNotification = true
             notificationActivatedAt = os.clock()
         else
-            if not isCountdownHudActive then
+            if message.message == "Ready..." then
                 PlayCountdownSound()
             end
             countdownHudMessage = message.message

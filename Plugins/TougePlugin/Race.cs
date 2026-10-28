@@ -183,7 +183,8 @@ public class Race
         while (!IsGo)
         {
             byte signalStage = 0;
-            while (signalStage < 3)
+            // Short beeps at 0s, 1s, 2s and 3s; the long Go beep starts at 4.15s.
+            while (signalStage < 5)
             {
                 if (!Configuration.IsRollingStart)
                 {
@@ -213,7 +214,7 @@ public class Race
                     _ = SendTimedMessageAsync("Ready...", true);
                 else if (signalStage == 1)
                     _ = SendTimedMessageAsync("Set...", true);
-                else if (signalStage == 2)
+                else if (signalStage == 4)
                 {
                     if (Configuration.IsRollingStart)
                     {
@@ -230,7 +231,7 @@ public class Race
                     IsGo = true;
                     break;
                 }
-                if (await WaitWithForfeitAsync(Task.Delay(signalStage == 1 ? 2000 : 1000)))
+                if (await WaitWithForfeitAsync(Task.Delay(signalStage == 3 ? 1150 : 1000)))
                     return RaceResult.Disconnected(Forfeit.Task.Result.EntryCar);
                 signalStage++;
             }
