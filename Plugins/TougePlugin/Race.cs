@@ -230,7 +230,7 @@ public class Race
                     IsGo = true;
                     break;
                 }
-                if (await WaitWithForfeitAsync(Task.Delay(1000)))
+                if (await WaitWithForfeitAsync(Task.Delay(signalStage == 1 ? 2000 : 1000)))
                     return RaceResult.Disconnected(Forfeit.Task.Result.EntryCar);
                 signalStage++;
             }
