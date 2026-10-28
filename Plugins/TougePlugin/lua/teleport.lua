@@ -1,6 +1,7 @@
 local supportAPI_collision = physics.disableCarCollisions ~= nil
 local lockInputAPI = physics.lockUserControlsFor ~= nil
 local vec = {x=vec3(1,0,0),y=vec3(0,1,0),z=vec3(0,0,1),empty=vec3(),empty2=vec2()}
+local collisionsDisabled = false
 
 ac.log('Touge teleport.lua loaded')
 ac.debug('AS_Teleport.supportAPI_collision', supportAPI_collision)
@@ -19,6 +20,8 @@ function TeleportExec(pos, rot)
         local ok, err = pcall(function () physics.disableCarCollisions(0, true) end)
         if not ok then
             ac.log('[Touge] TeleportExec disableCarCollisions failed: ' .. tostring(err))
+        else
+            collisionsDisabled = true
         end
     end
 
@@ -69,6 +72,16 @@ local lockControlsEvent = ac.OnlineEvent(
         local lockTimer = 10
         if message.lockControls == false then
             lockTimer = 0
+
+            if collisionsDisabled then
+                collisionsDisabled = false
+                if supportAPI_collision then
+                    local ok, err = pcall(function () physics.disableCarCollisions(0, false) end)
+                    if not ok then
+                        ac.log('[Touge] AS_LockControls re-enable collisions failed: ' .. tostring(err))
+                    end
+                end
+            end
         end
 
         if lockInputAPI then
