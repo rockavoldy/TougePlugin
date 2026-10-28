@@ -46,6 +46,10 @@ public class Race
     private static int _raceIdCounter;
     private readonly int _raceId = System.Threading.Interlocked.Increment(ref _raceIdCounter);
 
+    private const int LivenessPollIntervalMs = 250;
+    private const int MaxLivenessMisses = 3;
+    private const int UnresponsivePongThresholdMs = 4000;
+
     public delegate Race Factory(EntryCar leader, EntryCar follower, IRaceType raceType, Course course);
 
     public Race(EntryCar leader, EntryCar follower, IRaceType raceType, EntryCarManager entryCarManager, TougeConfiguration configuration, Touge plugin, SessionManager sessionManager, Course course)
@@ -74,6 +78,9 @@ public class Race
 
     public async Task<RaceResult> RaceAsync()
     {
+        using var livenessCts = new CancellationTokenSource();
+        Task livenessTask = MonitorParticipantsAsync(livenessCts.Token);
+
         try
         {
             Log.Debug("[TougeRace {RaceId}] RaceAsync started", _raceId);
@@ -105,6 +112,15 @@ public class Race
         }
         finally
         {
+            livenessCts.Cancel();
+            try
+            {
+                await livenessTask;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "[TougeRace {RaceId}] Liveness monitor stopped with error", _raceId);
+            }
             FinishRace();
         }
     }
@@ -285,21 +301,72 @@ public class Race
 
         _cancelled = true;
 
-        if (IsGo && _raceType is CourseRace)
-        {
-            // Course race has started so simply set the result of the race to disconnected.
-            Disconnected.TrySetResult(sender);
-        }
-        else
-        {
-            // Race has not started yet so set result for forfeit task.
-            Forfeit.TrySetResult(sender);
-        }
+        // Signal both completion sources so whichever stage of the race is
+        // currently waiting wakes up deterministically. Setup/countdown wait on
+        // Forfeit, while an in-progress course race waits on Disconnected.
+        // Routing the signal on a single non-volatile IsGo field could read a
+        // stale value across threads and complete the wrong source, leaving the
+        // race (and therefore the session) suspended forever.
+        Forfeit.TrySetResult(sender);
+        Disconnected.TrySetResult(sender);
+
         if (!Configuration.UseTrackFinish)
         {
             sender.SendPacket(new FinishPacket { LookForFinish = false });
         }
         UnlockControls();
+    }
+
+    private async Task MonitorParticipantsAsync(CancellationToken token)
+    {
+        int leaderMisses = 0;
+        int followerMisses = 0;
+
+        try
+        {
+            while (!token.IsCancellationRequested && !_cancelled)
+            {
+                await Task.Delay(LivenessPollIntervalMs, token);
+
+                if (Leader.Client is { } leaderClient && IsUnresponsive(Leader))
+                {
+                    if (++leaderMisses >= MaxLivenessMisses)
+                    {
+                        Log.Warning("[TougeRace {RaceId}] {ClientName} stopped responding and will be forfeited", _raceId, leaderClient.Name);
+                        ForfeitPlayer(leaderClient);
+                        return;
+                    }
+                }
+                else
+                {
+                    leaderMisses = 0;
+                }
+
+                if (Follower.Client is { } followerClient && IsUnresponsive(Follower))
+                {
+                    if (++followerMisses >= MaxLivenessMisses)
+                    {
+                        Log.Warning("[TougeRace {RaceId}] {ClientName} stopped responding and will be forfeited", _raceId, followerClient.Name);
+                        ForfeitPlayer(followerClient);
+                        return;
+                    }
+                }
+                else
+                {
+                    followerMisses = 0;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Race finished normally; the monitor has been stopped.
+        }
+    }
+
+    private bool IsUnresponsive(EntryCar car)
+    {
+        return car.LastPongTime > 0
+            && SessionManager.ServerTimeMilliseconds - car.LastPongTime > UnresponsivePongThresholdMs;
     }
 
     private async Task<bool> TeleportToStartAsync(EntryCar Leader, EntryCar Follower, SpawnPair startSlots)
