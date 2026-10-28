@@ -109,6 +109,8 @@ local notificationActivatedAt = nil
 local countdownHudMessage = ""
 local isCountdownHudActive = false
 local countdownActivatedAt = nil
+local countdownSoundPath = nil
+local countdownSoundEvent = nil
 
 local forfeitStartTime = nil
 local forfeitHoldDuration = 3.0 -- seconds
@@ -133,6 +135,34 @@ web.loadRemoteAssets(fontsURL, function(err, folder)
     fontBold = string.format("Two Weekend Go:%s", fontPathBold)
     fontSemiBold = string.format("Two Weekend Go:%s", fontPathSemiBold)
 end)
+
+-- Load countdown audio
+local countdownURL = baseUrl .. "countdown.zip"
+web.loadRemoteAssets(countdownURL, function(err, folder)
+    if err then
+        print("Failed to load countdown sound: " .. err)
+        return
+    end
+
+    countdownSoundPath = folder .. "/countdown.mp3"
+end)
+
+function PlayCountdownSound()
+    if countdownSoundPath == nil then
+        return
+    end
+
+    if countdownSoundEvent ~= nil then
+        pcall(countdownSoundEvent.dispose, countdownSoundEvent)
+        countdownSoundEvent = nil
+    end
+
+    local ok, event = pcall(ac.AudioEvent.fromFile, { filename = countdownSoundPath, use3D = false, loop = false }, false)
+    if ok and event ~= nil then
+        countdownSoundEvent = event
+        event:start()
+    end
+end
 
 -- Events
 local sessionStateEvent = ac.OnlineEvent(
@@ -217,6 +247,9 @@ local notificationEvent = ac.OnlineEvent(
             hasIncomingNotification = true
             notificationActivatedAt = os.clock()
         else
+            if not isCountdownHudActive then
+                PlayCountdownSound()
+            end
             countdownHudMessage = message.message
             isCountdownHudActive = true
             countdownActivatedAt = os.clock()
@@ -715,7 +748,7 @@ function script.drawUI(dt)
 
     -- Draw countdown
     if isCountdownHudActive then
-        local fontSize = scaling.size(48)
+        local fontSize = scaling.size(96)
         local textSize = ui.measureDWriteText(countdownHudMessage, fontSize)
         -- Compute top-left corner by subtracting half the text size
         local textPos = vec2(
