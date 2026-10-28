@@ -144,7 +144,7 @@ web.loadRemoteAssets(countdownURL, function(err, folder)
         return
     end
 
-    countdownSoundPath = folder .. "/countdown.mp3"
+    countdownSoundPath = folder .. "/countdown.wav"
 end)
 
 function PlayCountdownSound()
