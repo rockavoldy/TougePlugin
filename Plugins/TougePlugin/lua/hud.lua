@@ -160,7 +160,7 @@ function PlayCountdownSound()
     local ok, event = pcall(ac.AudioEvent.fromFile, { filename = countdownSoundPath, use3D = false, loop = false }, false)
     if ok and event ~= nil then
         countdownSoundEvent = event
-        event.volume = event.volume * 2
+        event.volume = event.volume * 5
         event:start()
     end
 end
