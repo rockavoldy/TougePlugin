@@ -82,7 +82,8 @@ the Lua scripts under `lua/` are the reference client implementation of that con
    - `extra_cfg.yml` has `MinimumCSPVersion >= 1937`
 2. **Provide Lua scripts** — reads and registers `teleport.lua`, `hud.lua`, `timing.lua`
    with the server's `CSPServerScriptProvider`, so they are pushed to every
-   client automatically.
+   client automatically. A script can be split into parts in a folder named after it
+   (`lua/hud/` for `hud.lua`); the parts are joined in file name order into one script.
 3. **Database setup** —
    - `IsDbLocalMode == true` → `SqliteConnectionFactory("plugins/TougePlugin/database.db")`
    - otherwise → `PostgresConnectionFactory(PostgresqlConnectionString)`
@@ -424,7 +425,7 @@ All packets are `OnlineEvent` messages. Direction legend:
 
 | Script | Key responsibilities |
 |--------|----------------------|
-| `hud.lua` | Full HUD: Elo display/animation, invite menu (nearby list, course select, race-type toggle), incoming invites, standings, countdown/notifications, forfeit. Keybindings: `N` invite nearby, `I` invite menu, `M` accept, `H` hide tutorial, `F` hold-to-forfeit. Loads fonts/assets from `/static/TougePlugin/`. |
+| `hud.lua` | Full HUD: Elo display/animation, invite menu (nearby list, course select, race-type toggle), incoming invites, standings, countdown/notifications, forfeit. Keybindings: `N` invite nearby, `I` invite menu, `M` accept, `H` hide tutorial, `F` hold-to-forfeit. Loads fonts/assets from `/static/TougePlugin/`. Split into parts under `lua/hud/`: config, scaling, state, asset manifest, layout tables, utilities, event handlers, draw code, input, and a debug mock panel (enabled with `debugHud` in `00_config.lua`). |
 | `teleport.lua` | Handles `AS_Teleport`: raycasts down to ground level, briefly disables collisions, locks controls 10 s, then `physics.setCarPosition`. Also implements `AS_LockControls`. |
 | `timing.lua` | Tracks `AS_FinishLine` points; on `AS_Finish { lookForFinish }` enables finish watching; per-frame segment-intersection test against the 2D line, sends `AS_Finish` up once crossed; reads `UseTrackFinish` from `AS_Initialization`. |
 

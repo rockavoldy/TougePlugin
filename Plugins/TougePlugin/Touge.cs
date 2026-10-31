@@ -159,12 +159,26 @@ public class Touge : BackgroundService, IHostedService
 
     private void ProvideScript(string scriptName)
     {
-        string scriptPath = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "lua", scriptName);
+        string luaDirectory = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "lua");
 
-        using var streamReader = new StreamReader(scriptPath);
-        var reconnectScript = streamReader.ReadToEnd();
+        // A script can be split into parts in a folder named after it (lua/hud/ for hud.lua).
+        // The parts are joined in ordinal file name order into a single chunk, so locals
+        // declared in an earlier part are visible in later ones, exactly as in one file.
+        string partsDirectory = Path.Join(luaDirectory, Path.GetFileNameWithoutExtension(scriptName));
+        string script;
+        if (Directory.Exists(partsDirectory))
+        {
+            var parts = Directory.GetFiles(partsDirectory, "*.lua")
+                .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
+                .Select(path => $"-- ==== {Path.GetFileName(path)} ====\n{File.ReadAllText(path)}");
+            script = string.Join("\n", parts);
+        }
+        else
+        {
+            script = File.ReadAllText(Path.Join(luaDirectory, scriptName));
+        }
 
-        _scriptProvider.AddScript(reconnectScript, scriptName);
+        _scriptProvider.AddScript(script, scriptName);
     }
 
     private async void OnInitializationPacket(ACTcpClient client, InitializationPacket packet)
