@@ -12,9 +12,10 @@ local function DrawShellSprite(image, pos, size, color, uvMax)
     ui.drawImage(image, p1, p1 + size * s, color or rgbm(1, 1, 1, 1), vec2(0, 0), uvMax or vec2(1, 1))
 end
 
--- Draws text centered in a shell rectangle, shrunk to fit its width but not below
--- minFontSize. Text that still does not fit is left-aligned and cut off at the rectangle.
-local function DrawShellText(text, textFont, fontSize, minFontSize, rectMin, rectMax, color)
+-- Draws text in a shell rectangle, centered unless alignment is given, shrunk to fit its
+-- width but not below minFontSize. Text that still does not fit is left-aligned and cut off
+-- at the rectangle.
+local function DrawShellText(text, textFont, fontSize, minFontSize, rectMin, rectMax, color, alignment)
     local width = rectMax.x - rectMin.x
     local fitted = FindFontSize(text, fontSize * layout.shellScale, textFont, width * layout.shellScale)
     fitted = math.max(fitted, minFontSize * layout.shellScale)
@@ -22,9 +23,9 @@ local function DrawShellText(text, textFont, fontSize, minFontSize, rectMin, rec
 
     ui.pushDWriteFont(textFont)
     local overflows = ui.measureDWriteText(text, scaling.size(fitted)).x > width * s
-    local alignment = overflows and ui.Alignment.Start or ui.Alignment.Center
+    local horizontal = overflows and ui.Alignment.Start or (alignment or ui.Alignment.Center)
     ui.dwriteDrawTextClipped(text, scaling.size(fitted), rectMin * s, rectMax * s,
-        alignment, ui.Alignment.Center, false, color)
+        horizontal, ui.Alignment.Center, false, color)
     ui.popDWriteFont()
 end
 

@@ -1,166 +1,229 @@
--- Initial D invite menu and course select: a title row and a stack of label-less name rows,
--- anchored top-right. Rows brighten under the mouse. Coordinates are shell pixels.
+-- Invite menu and course select in the style of the Initial D Arcade Stage 6 menus (see
+-- layout.as6Panel): a silver title bar, a subtitle pill and white cards that get a gold
+-- frame under the mouse. Drawn in code as a placeholder; coordinates are shell pixels.
 
--- Screen position and size of a panel with the title row and rowCount list rows.
-local function IdPanelRect(rowCount)
-    local p = layout.idPanel
-    local size = vec2(p.rowSize.x, p.listTop + math.max(rowCount - 1, 0) * p.rowStep + p.rowSize.y) * ShellScale()
+local function Fill(min, max, color, rounding)
+    local s = ShellScale()
+    ui.drawRectFilled(min * s, max * s, color, (rounding or 0) * s)
+end
+
+local function Outline(min, max, color, rounding, thickness)
+    local s = ShellScale()
+    ui.drawRect(min * s, max * s, color, (rounding or 0) * s, ui.CornerFlags.All, (thickness or 1) * s)
+end
+
+local function VerticalGradient(min, max, top, bottom)
+    local s = ShellScale()
+    ui.drawRectFilledMultiColor(min * s, max * s, top, top, bottom, bottom)
+end
+
+-- Screen position and size of a panel with cardCount cards starting at shell y listTop.
+local function As6PanelRect(listTop, cardCount)
+    local p = layout.as6Panel
+    local height = listTop + cardCount * p.card.step + p.bottomPadding
+    local size = vec2(p.width, height) * ShellScale()
     return vec2(windowWidth - scaling.size(p.marginRight) - size.x, scaling.size(p.marginTop)), size
 end
 
--- Draws the frosted backdrop over the whole window at windowPos (screen units). The scene
--- texture needs CSP's Graphics Adjustment; without it only the dark layer shows.
-local function DrawIdBackdrop(windowPos, size)
-    local b = layout.idPanel.backdrop
+-- Frosted backdrop over the whole window at windowPos (screen units). The scene texture
+-- needs CSP's Graphics Adjustment; without it only the light layer shows.
+local function DrawAs6Backdrop(windowPos, size)
+    local b = layout.as6Panel.backdrop
+    local s = ShellScale()
     if ui.isImageReady('dynamic::screen') then
         local screen = vec2(sim.windowWidth, sim.windowHeight)
         ui.beginBlurring()
         ui.drawImage('dynamic::screen', vec2(0, 0), size, rgbm(1, 1, 1, 1), windowPos / screen, (windowPos + size) / screen)
-        ui.endBlurring(b.blur * ShellScale())
+        ui.endBlurring(b.blur * s)
     end
-    ui.drawRectFilled(vec2(0, 0), size, b.tint)
+    ui.drawRectFilled(vec2(0, 0), size, b.tint, b.rounding * s)
+    ui.drawRect(vec2(0, 0), size, b.border, b.rounding * s)
 end
 
--- Draws a row with its top at shell y. Clickable rows brighten under the mouse; returns
--- true when the row was clicked this frame.
-local function DrawIdRow(y, mousePos, clickable)
-    local p = layout.idPanel
-    local origin = vec2(0, y)
-    DrawShellSprite(p.rowImage, origin, p.rowSize)
-    if not clickable then
-        return false
-    end
+local function DrawAs6Header(title, subtitle)
+    local p = layout.as6Panel
+    local t = p.title
+    VerticalGradient(t.min, t.max, t.top, t.bottom)
+    Fill(t.min, vec2(t.max.x, t.min.y + 2), t.highlight)
+    DrawShellText(title, fontBold, t.fontSize, t.fontSize, t.min, t.max, t.color)
 
+    local st = p.subtitle
+    local radius = (st.max.y - st.min.y) / 2
+    Fill(st.min, st.max, st.fill, radius)
+    Outline(st.min, st.max, st.border, radius)
+    DrawShellText(subtitle, font, st.fontSize, st.fontSize, st.min, st.max, st.color)
+end
+
+-- Course / Outrun pills, centered under the subtitle.
+local function DrawAs6RaceTypeToggle(mousePos)
+    local p = layout.as6Panel
+    local t = p.toggle
+    local card = p.card
     local s = ShellScale()
-    local hoverMin = (origin + p.hoverMin) * s
-    local hoverMax = (origin + p.hoverMax) * s
-    if IsInRect(mousePos, hoverMin, hoverMax) then
-        ui.drawRectFilled(hoverMin, hoverMax, p.hoverColor)
-        ui.setMouseCursor(ui.MouseCursor.Hand)
-    end
-    return ConsumeClickIn(mousePos, hoverMin, hoverMax)
-end
-
-local function DrawIdTitle(label, title, mousePos, bandText)
-    local p = layout.idPanel
-    DrawIdRow(0, mousePos, false)
-    DrawShellLabel(label, p.label, p.labelFontSize, p.labelColor)
-    DrawShellText(title, fontSemiBold, p.nameFontSize, p.nameMinFontSize, p.nameMin, p.nameMax, p.textColor)
-    if bandText ~= nil then
-        DrawShellText(bandText, font, p.bandFontSize, p.bandMinFontSize, p.bandMin, p.bandMax, p.bandTextColor)
-    end
-end
-
--- Course / Outrun switch in the band of the title row.
-local function DrawIdRaceTypeToggle(mousePos)
-    local t = layout.idPanel.toggle
-    local s = ShellScale()
-    local middle = (t.min.x + t.max.x) / 2
-    local halves = {
-        { text = "COURSE", isCourse = true, min = t.min, max = vec2(middle, t.max.y) },
-        { text = "OUTRUN", isCourse = false, min = vec2(middle, t.min.y), max = t.max },
+    local left = (p.width - 2 * t.size.x - t.gap) / 2
+    local pills = {
+        { text = "COURSE", isCourse = true, min = vec2(left, t.y) },
+        { text = "OUTRUN", isCourse = false, min = vec2(left + t.size.x + t.gap, t.y) },
     }
 
-    for _, half in ipairs(halves) do
-        local selected = isToggleCourse == half.isCourse
-        local halfMin = half.min * s
-        local halfMax = half.max * s
-        ui.drawRectFilled(halfMin, halfMax, selected and t.selected or t.idle, t.rounding * s)
-        if not selected and IsInRect(mousePos, halfMin, halfMax) then
+    for _, pill in ipairs(pills) do
+        local max = pill.min + t.size
+        local radius = t.size.y / 2
+        local selected = isToggleCourse == pill.isCourse
+        Fill(pill.min, max, selected and t.selectedFill or t.idleFill, radius)
+        if selected then
+            Outline(pill.min, max, card.hover, radius, 2)
+        elseif IsInRect(mousePos, pill.min * s, max * s) then
             ui.setMouseCursor(ui.MouseCursor.Hand)
-            if ConsumeClickIn(mousePos, halfMin, halfMax) then
-                isToggleCourse = half.isCourse
+            if ConsumeClickIn(mousePos, pill.min * s, max * s) then
+                isToggleCourse = pill.isCourse
             end
         end
-        local textColor = selected and rgbm(1, 1, 1, 1) or rgbm(1, 1, 1, 0.6)
-        DrawShellText(half.text, fontSemiBold, t.fontSize, t.fontSize, half.min, half.max, textColor)
+        DrawShellText(pill.text, fontSemiBold, t.fontSize, t.fontSize, pill.min, max, selected and t.selectedText or t.idleText)
     end
-    ui.drawRect(t.min * s, t.max * s, t.border, t.rounding * s)
+end
+
+-- Draws a card with its top-left at shell y. content fields: boxText, chips (list of
+-- { text, fill }), caption, name, detail, busy, avatar (image path or nil). Returns true when
+-- the card was clicked this frame.
+local function DrawAs6Card(y, mousePos, content)
+    local c = layout.as6Panel.card
+    local s = ShellScale()
+    local origin = vec2(c.x, y)
+    local cardMax = origin + c.size
+
+    Fill(origin, cardMax, c.fill, c.rounding)
+    Outline(origin, cardMax, c.border, c.rounding)
+
+    -- Left: headline box and chips
+    Fill(origin + c.boxMin, origin + c.boxMax, c.boxFill, 3)
+    Outline(origin + c.boxMin, origin + c.boxMax, c.boxBorder, 3)
+    DrawShellText(content.boxText, fontBold, c.boxFontSize, c.boxFontSize * 0.7,
+        origin + c.boxMin, origin + c.boxMax, content.busy and c.busyColor or c.boxColor)
+
+    for i, chip in ipairs(content.chips) do
+        local chipMin = origin + vec2(c.boxMin.x + (i - 1) * (c.chipWidth + c.chipGap), c.chipY)
+        local chipMax = chipMin + vec2(c.chipWidth, c.chipHeight)
+        Fill(chipMin, chipMax, chip.fill or c.chipFill, 3)
+        DrawShellText(chip.text, fontSemiBold, c.chipFontSize, c.chipFontSize * 0.8, chipMin, chipMax, c.chipText)
+    end
+
+    -- Right: silver info area with caption, name and detail
+    VerticalGradient(origin + c.infoMin, origin + c.infoMax, c.infoTop, c.infoBottom)
+    Outline(origin + c.infoMin, origin + c.infoMax, c.border)
+
+    local textLeft = c.textLeft
+    if content.avatar ~= nil then
+        DrawShellSprite(content.avatar, origin + c.avatar, vec2(c.avatarSize, c.avatarSize))
+        textLeft = textLeft + c.avatarShift
+    end
+    local function Line(span)
+        return origin + vec2(textLeft, span.x), origin + vec2(c.textRight, span.y)
+    end
+    local captionMin, captionMax = Line(c.captionY)
+    DrawShellText(content.caption, fontSemiBold, c.captionFontSize, c.captionFontSize, captionMin, captionMax, c.mutedColor, ui.Alignment.Start)
+    local nameMin, nameMax = Line(c.nameY)
+    DrawShellText(content.name, fontBold, c.nameFontSize, c.nameMinFontSize, nameMin, nameMax,
+        content.busy and c.busyColor or c.textColor, ui.Alignment.Start)
+    local detailMin, detailMax = Line(c.detailY)
+    DrawShellText(content.detail, font, c.detailFontSize, c.detailFontSize, detailMin, detailMax, c.mutedColor, ui.Alignment.Start)
+
+    -- Gold frame under the mouse
+    local screenMin = origin * s
+    local screenMax = cardMax * s
+    if not IsInRect(mousePos, screenMin, screenMax) then
+        return false
+    end
+    Outline(origin, cardMax, c.hoverGlow, c.rounding + 2, c.hoverGlowThickness)
+    Outline(origin, cardMax, c.hover, c.rounding, c.hoverThickness)
+    ui.setMouseCursor(ui.MouseCursor.Hand)
+    return ConsumeClickIn(mousePos, screenMin, screenMax)
 end
 
 local function DrawIdInviteMenu()
-    if not hasInviteMenuOpen or idSprites == nil then
+    if not hasInviteMenuOpen then
         return
     end
 
-    local p = layout.idPanel
+    local p = layout.as6Panel
     local playerCount = CountNearbyPlayers()
-    local pos, size = IdPanelRect(playerCount)
+    local showToggle = showRaceTypeToggle and playerCount > 0
+    local listTop = showToggle and p.listTopWithToggle or p.listTop
+    local pos, size = As6PanelRect(listTop, playerCount)
     ui.transparentWindow("inviteWindow", pos, size, function ()
-        DrawIdBackdrop(pos, size)
+        DrawAs6Backdrop(pos, size)
         local mousePos = ui.mouseLocalPos()
 
-        local title = "Challenge a driver"
+        local subtitle = "Choose a driver to challenge  ·  I to close"
         if nearbyPlayers[1] == nil then
-            title = "Looking for drivers..." -- waiting for the lobby status
+            subtitle = "Looking for drivers..." -- waiting for the lobby status
         elseif playerCount == 0 then
-            title = "No other players online"
+            subtitle = "No other players online  ·  I to close"
         end
-        local showToggle = showRaceTypeToggle and playerCount > 0
-        DrawIdTitle("NEARBY", title, mousePos, not showToggle and "Press I to close" or nil)
+        DrawAs6Header("CHALLENGE", subtitle)
         if showToggle then
-            DrawIdRaceTypeToggle(mousePos)
+            DrawAs6RaceTypeToggle(mousePos)
         end
 
         for index = 1, playerCount do
             local player = nearbyPlayers[index]
-            local y = p.listTop + (index - 1) * p.rowStep
-            local origin = vec2(0, y)
-            if DrawIdRow(y, mousePos, true) then
+            -- Skipped until the avatar has loaded, so a missing one leaves no empty square.
+            local avatarPath = GetAvatarPath(player.id)
+            local avatar = (loadSteamAvatars and ui.isImageReady(avatarPath)) and avatarPath or nil
+            local clicked = DrawAs6Card(listTop + (index - 1) * p.card.step, mousePos, {
+                boxText = tostring(player.elo),
+                chips = {
+                    { text = "ELO", fill = GetEloColor(player.elo) },
+                    { text = player.inRace and "IN RACE" or "READY" },
+                },
+                caption = "DRIVER",
+                name = player.name,
+                detail = player.inRace and "Currently in a race" or "Click to challenge",
+                busy = player.inRace,
+                avatar = avatar,
+            })
+            if clicked then
                 ChooseNearbyPlayer(player)
             end
-
-            -- Skipped until the avatar has loaded, so a missing one leaves no black square.
-            local avatarPath = GetAvatarPath(player.id)
-            if loadSteamAvatars and ui.isImageReady(avatarPath) then
-                DrawShellSprite(avatarPath, origin + p.avatar, vec2(p.avatarSize, p.avatarSize))
-            end
-
-            -- Players already in a race are greyed out, as in the old menu.
-            local label, labelColor, nameColor = "ELO", GetEloColor(player.elo), p.textColor
-            if player.inRace then
-                label, labelColor, nameColor = "IN RACE", p.busyColor, p.busyColor
-            end
-            DrawShellLabel(label, origin + p.label, p.labelFontSize, labelColor)
-            DrawShellText(player.name, fontSemiBold, p.nameFontSize, p.nameMinFontSize, origin + p.nameMin, origin + p.nameMax, nameColor)
-            DrawShellNumber(player.elo, p.digitsCenterX, y + p.digitsY, p.digitSize)
         end
     end)
 end
 
 local function DrawIdCourseSelect()
-    if not hasCourseSelectOpen or idSprites == nil then
+    if not hasCourseSelectOpen then
         return
     end
 
-    local p = layout.idPanel
-    local visibleRows = math.min(#courseNames, p.maxVisibleRows)
-    local maxScroll = #courseNames - visibleRows
-    local pos, size = IdPanelRect(visibleRows)
+    local p = layout.as6Panel
+    local visibleCards = math.min(#courseNames, p.maxVisibleRows)
+    local maxScroll = #courseNames - visibleCards
+    local pos, size = As6PanelRect(p.listTop, visibleCards)
     ui.transparentWindow("courseSelectWindow", pos, size, function ()
-        DrawIdBackdrop(pos, size)
+        DrawAs6Backdrop(pos, size)
         local mousePos = ui.mouseLocalPos()
 
-        -- Longer lists scroll a whole row per wheel step (where this CSP build supports it).
+        -- Longer lists scroll a whole card per wheel step (where this CSP build supports it).
         if maxScroll > 0 and ui.mouseWheel ~= nil and ui.windowHovered ~= nil and ui.windowHovered() then
             courseScroll = math.max(0, math.min(maxScroll, courseScroll - ui.mouseWheel()))
         end
 
-        local bandText = maxScroll > 0 and "Scroll for more courses" or "Press I to cancel"
-        DrawIdTitle("COURSE", "Select a course", mousePos, bandText)
+        local subtitle = maxScroll > 0 and "Scroll for more courses  ·  I to cancel" or "Choose a course  ·  I to cancel"
+        DrawAs6Header("COURSE SELECT", subtitle)
 
-        local raceType = isToggleCourse and "Course race" or "Outrun race"
-        for row = 1, visibleRows do
-            local course = courseNames[row + courseScroll]
-            local y = p.listTop + (row - 1) * p.rowStep
-            local origin = vec2(0, y)
-            if DrawIdRow(y, mousePos, true) then
+        local raceType = isToggleCourse and "COURSE" or "OUTRUN"
+        for row = 1, visibleCards do
+            local index = row + courseScroll
+            local course = courseNames[index]
+            local clicked = DrawAs6Card(p.listTop + (row - 1) * p.card.step, mousePos, {
+                boxText = raceType,
+                chips = { { text = "No. " .. index } },
+                caption = "COURSE",
+                name = course,
+                detail = isToggleCourse and "Course race to the finish line" or "Outrun race",
+            })
+            if clicked then
                 ChooseCourse(course)
             end
-
-            DrawShellLabel("COURSE", origin + p.label, p.labelFontSize, p.labelColor)
-            DrawShellText(course, fontSemiBold, p.nameFontSize, p.nameMinFontSize, origin + p.nameMin, origin + p.nameMax, p.textColor)
-            DrawShellText(raceType, font, p.bandFontSize, p.bandMinFontSize, origin + p.bandMin, origin + p.bandMax, p.bandTextColor)
         end
     end)
 end

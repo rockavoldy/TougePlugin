@@ -143,56 +143,110 @@ local layout = {
         digitSize = vec2(23, 26), -- position digits scaled to the band
     },
 
-    -- Invite menu and course select as a stack of label-less name rows, anchored top-right.
-    -- The first row is the title; the band of the title row holds the race type toggle.
-    idPanel = {
+    -- Invite menu and course select in the style of the Initial D Arcade Stage 6 menus:
+    -- a silver title bar, a subtitle pill and white cards with a gold frame on hover,
+    -- anchored top-right. Placeholder drawn in code until real shells exist; every size and
+    -- colour is here so images can replace the shapes later.
+    as6Panel = {
         marginRight = 50, -- reference pixels
         marginTop = 50,
-        rowImage = assets.images.idNameBlank,
-        rowSize = vec2(500, 70),
-        listTop = 80, -- shell y of the first list row, below the title row
-        rowStep = 76,
-        maxVisibleRows = 10, -- more course rows scroll with the mouse wheel
+        width = 520,
+        maxVisibleRows = 8, -- more course cards scroll with the mouse wheel
+        bottomPadding = 12,
 
-        -- Frosted backdrop behind the whole panel: the scene behind it, blurred, under a
-        -- 50% black layer.
+        -- Frosted backdrop: the scene behind the panel, blurred, under a 50% light layer.
         backdrop = {
-            blur = 12, -- shell pixels
-            tint = rgbm(0, 0, 0, 0.5),
+            blur = 12,
+            tint = rgbm(0.78, 0.85, 0.91, 0.5),
+            border = rgbm(1, 1, 1, 0.55),
+            rounding = 10,
         },
 
-        label = vec2(38, 1),
-        labelFontSize = 13,
-        labelColor = rgbm(0.44, 0.65, 0.87, 1), -- the shells' "DRIVER" blue
-        nameMin = vec2(100, 3),
-        nameMax = vec2(420, 39),
-        nameFontSize = 26,
-        nameMinFontSize = 20,
-        bandMin = vec2(40, 39),
-        bandMax = vec2(460, 68),
-        bandFontSize = 18,
-        bandMinFontSize = 14,
-        digitsCenterX = 250,
-        digitsY = 41,
-        digitSize = vec2(23, 26),
-        avatar = vec2(40, 6),
-        avatarSize = 58,
+        title = {
+            min = vec2(0, 0),
+            max = vec2(520, 50),
+            top = rgbm(0.95, 0.96, 0.97, 0.97), -- brushed silver gradient
+            bottom = rgbm(0.64, 0.67, 0.71, 0.97),
+            highlight = rgbm(1, 1, 1, 0.9),
+            fontSize = 26,
+            color = rgbm(0.2, 0.22, 0.25, 1),
+        },
 
-        hoverMin = vec2(30, 3),
-        hoverMax = vec2(470, 68),
-        hoverColor = rgbm(1, 1, 1, 0.1),
-        textColor = rgbm(1, 1, 1, 1),
-        busyColor = rgbm(0.55, 0.55, 0.55, 1),
-        bandTextColor = rgbm(0.59, 0.75, 0.9, 1), -- as the driver's car name in the cluster
+        subtitle = {
+            min = vec2(40, 58),
+            max = vec2(480, 82),
+            fill = rgbm(0.86, 0.9, 0.94, 0.92),
+            border = rgbm(1, 1, 1, 0.85),
+            fontSize = 14,
+            color = rgbm(0.25, 0.28, 0.32, 1),
+        },
 
+        -- Course / Outrun pills under the subtitle.
         toggle = {
-            min = vec2(150, 42),
-            max = vec2(350, 66),
+            y = 92,
+            size = vec2(140, 28),
+            gap = 12,
             fontSize = 15,
-            selected = rgbm(0.34, 0.45, 0.87, 1), -- the driver's blue
-            idle = rgbm(1, 1, 1, 0.12),
-            border = rgbm(0.8, 0.85, 1, 0.6),
-            rounding = 4,
+            idleFill = rgbm(0.6, 0.64, 0.69, 0.92),
+            idleText = rgbm(1, 1, 1, 1),
+            selectedFill = rgbm(0.97, 0.97, 0.98, 1),
+            selectedText = rgbm(0.2, 0.22, 0.25, 1),
+        },
+
+        listTop = 92,
+        listTopWithToggle = 130,
+
+        card = {
+            x = 12,
+            size = vec2(496, 86),
+            step = 94,
+            fill = rgbm(0.93, 0.95, 0.97, 0.95),
+            border = rgbm(0.72, 0.77, 0.82, 1),
+            rounding = 5,
+
+            -- White box on the left with the headline value (Elo, race type) in red.
+            boxMin = vec2(8, 8),
+            boxMax = vec2(146, 56),
+            boxFill = rgbm(1, 1, 1, 1),
+            boxBorder = rgbm(0.7, 0.74, 0.78, 1),
+            boxFontSize = 26,
+            boxColor = rgbm(0.78, 0.08, 0.12, 1),
+
+            -- Grey tag chips under the box.
+            chipY = 61,
+            chipHeight = 17,
+            chipWidth = 67,
+            chipGap = 4,
+            chipFontSize = 11,
+            chipFill = rgbm(0.6, 0.64, 0.69, 1),
+            chipText = rgbm(1, 1, 1, 1),
+
+            -- Silver info area on the right: caption, big name, detail line.
+            infoMin = vec2(152, 8),
+            infoMax = vec2(488, 78),
+            infoTop = rgbm(0.99, 0.99, 1, 1),
+            infoBottom = rgbm(0.85, 0.87, 0.9, 1),
+            textLeft = 164, -- moves right by avatarShift when an avatar is shown
+            textRight = 480,
+            captionY = vec2(9, 25),
+            captionFontSize = 13,
+            nameY = vec2(24, 58),
+            nameFontSize = 28,
+            nameMinFontSize = 20,
+            detailY = vec2(57, 76),
+            detailFontSize = 14,
+            textColor = rgbm(0.13, 0.14, 0.16, 1),
+            mutedColor = rgbm(0.36, 0.39, 0.43, 1),
+            busyColor = rgbm(0.55, 0.57, 0.6, 1),
+            avatar = vec2(160, 13),
+            avatarSize = 60,
+            avatarShift = 68,
+
+            -- Gold frame around the card under the mouse.
+            hover = rgbm(0.93, 0.76, 0.3, 1),
+            hoverGlow = rgbm(1, 0.85, 0.4, 0.35),
+            hoverThickness = 3,
+            hoverGlowThickness = 8,
         },
     },
 
