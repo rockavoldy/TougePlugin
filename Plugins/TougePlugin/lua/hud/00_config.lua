@@ -40,5 +40,5 @@ local soundSlots = {
     notify = { volume = 1 },    -- a notification arrives
     win = { volume = 1 },       -- the session ends in a win
     lose = { volume = 1 },      -- the session ends in a loss
-    countdown = { volume = 5 }, -- from countdown.zip, played on "Ready..."
+    countdown = { volume = 3.75 }, -- from countdown.zip, played on "Ready..."
 }
