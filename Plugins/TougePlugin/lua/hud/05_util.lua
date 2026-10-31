@@ -82,7 +82,6 @@ local function GetCarPreviewPath(sessionId)
             end)
         end
         carPreviewCache[key] = path or false
-        ac.log("Touge car preview for " .. key .. ": " .. tostring(path))
     end
     return carPreviewCache[key] or nil
 end
