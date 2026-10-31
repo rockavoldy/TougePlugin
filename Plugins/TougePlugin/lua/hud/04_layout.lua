@@ -154,6 +154,13 @@ local layout = {
         rowStep = 76,
         maxVisibleRows = 10, -- more course rows scroll with the mouse wheel
 
+        -- Frosted backdrop behind the whole panel: the scene behind it, blurred, under a
+        -- 50% black layer.
+        backdrop = {
+            blur = 12, -- shell pixels
+            tint = rgbm(0, 0, 0, 0.5),
+        },
+
         label = vec2(38, 1),
         labelFontSize = 13,
         labelColor = rgbm(0.44, 0.65, 0.87, 1), -- the shells' "DRIVER" blue

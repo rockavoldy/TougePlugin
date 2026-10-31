@@ -8,6 +8,19 @@ local function IdPanelRect(rowCount)
     return vec2(windowWidth - scaling.size(p.marginRight) - size.x, scaling.size(p.marginTop)), size
 end
 
+-- Draws the frosted backdrop over the whole window at windowPos (screen units). The scene
+-- texture needs CSP's Graphics Adjustment; without it only the dark layer shows.
+local function DrawIdBackdrop(windowPos, size)
+    local b = layout.idPanel.backdrop
+    if ui.isImageReady('dynamic::screen') then
+        local screen = vec2(sim.windowWidth, sim.windowHeight)
+        ui.beginBlurring()
+        ui.drawImage('dynamic::screen', vec2(0, 0), size, rgbm(1, 1, 1, 1), windowPos / screen, (windowPos + size) / screen)
+        ui.endBlurring(b.blur * ShellScale())
+    end
+    ui.drawRectFilled(vec2(0, 0), size, b.tint)
+end
+
 -- Draws a row with its top at shell y. Clickable rows brighten under the mouse; returns
 -- true when the row was clicked this frame.
 local function DrawIdRow(y, mousePos, clickable)
@@ -74,6 +87,7 @@ local function DrawIdInviteMenu()
     local playerCount = CountNearbyPlayers()
     local pos, size = IdPanelRect(playerCount)
     ui.transparentWindow("inviteWindow", pos, size, function ()
+        DrawIdBackdrop(pos, size)
         local mousePos = ui.mouseLocalPos()
 
         local title = "Challenge a driver"
@@ -96,8 +110,10 @@ local function DrawIdInviteMenu()
                 ChooseNearbyPlayer(player)
             end
 
-            if loadSteamAvatars then
-                DrawShellSprite(GetAvatarPath(player.id), origin + p.avatar, vec2(p.avatarSize, p.avatarSize))
+            -- Skipped until the avatar has loaded, so a missing one leaves no black square.
+            local avatarPath = GetAvatarPath(player.id)
+            if loadSteamAvatars and ui.isImageReady(avatarPath) then
+                DrawShellSprite(avatarPath, origin + p.avatar, vec2(p.avatarSize, p.avatarSize))
             end
 
             -- Players already in a race are greyed out, as in the old menu.
@@ -122,6 +138,7 @@ local function DrawIdCourseSelect()
     local maxScroll = #courseNames - visibleRows
     local pos, size = IdPanelRect(visibleRows)
     ui.transparentWindow("courseSelectWindow", pos, size, function ()
+        DrawIdBackdrop(pos, size)
         local mousePos = ui.mouseLocalPos()
 
         -- Longer lists scroll a whole row per wheel step (where this CSP build supports it).
