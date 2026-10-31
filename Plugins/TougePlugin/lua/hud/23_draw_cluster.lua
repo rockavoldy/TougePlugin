@@ -12,16 +12,20 @@ local function DrawSprite(image, pos, size, color, uvMax)
     ui.drawImage(image, p1, p1 + size * s, color or rgbm(1, 1, 1, 1), vec2(0, 0), uvMax or vec2(1, 1))
 end
 
--- Draws text centered in a shell rectangle, shrunk to fit its width.
-local function DrawCenteredText(text, textFont, fontSize, rectMin, rectMax, color)
+-- Draws text centered in a shell rectangle, shrunk to fit its width but not below
+-- minFontSize. Text that still does not fit is left-aligned and cut off at the rectangle.
+local function DrawFittedText(text, textFont, fontSize, minFontSize, rectMin, rectMax, color)
     local shellScale = layout.cluster.shellScale
     local width = rectMax.x - rectMin.x
     local fitted = FindFontSize(text, fontSize * shellScale, textFont, width * shellScale)
+    fitted = math.max(fitted, minFontSize * shellScale)
     local s = ClusterScale()
 
     ui.pushDWriteFont(textFont)
+    local overflows = ui.measureDWriteText(text, scaling.size(fitted)).x > width * s
+    local alignment = overflows and ui.Alignment.Start or ui.Alignment.Center
     ui.dwriteDrawTextClipped(text, scaling.size(fitted), rectMin * s, rectMax * s,
-        ui.Alignment.Center, ui.Alignment.Center, false, color)
+        alignment, ui.Alignment.Center, false, color)
     ui.popDWriteFont()
 end
 
@@ -78,10 +82,10 @@ local function DrawNameRow(rowOffset, name, carName, position, carColor)
     local origin = n.pos + vec2(0, rowOffset)
 
     if name ~= "" then
-        DrawCenteredText(name, fontSemiBold, n.nameFontSize, origin + n.nameMin, origin + n.nameMax, rgbm(1, 1, 1, 1))
+        DrawFittedText(name, fontSemiBold, n.nameFontSize, n.nameMinFontSize, origin + n.nameMin, origin + n.nameMax, rgbm(1, 1, 1, 1))
     end
     if carName ~= "" then
-        DrawCenteredText(carName, font, n.carFontSize, origin + n.carMin, origin + n.carMax, carColor)
+        DrawFittedText(carName, font, n.carFontSize, n.carMinFontSize, origin + n.carMin, origin + n.carMax, carColor)
     end
 
     local digit = position and idSprites.positionDigits[position] or idSprites.positionDash
