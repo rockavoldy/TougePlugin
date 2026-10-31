@@ -9,6 +9,7 @@ function script.drawUI(dt)
     DrawTutorial()
     DrawInviteMenu()
     DrawCourseSelect()
+    DrawCluster()
     DrawCountdown()
     DrawPopups()
 end

@@ -1,7 +1,8 @@
 -- Always-on elements: standings, Elo, tutorial and countdown.
 
 local function DrawStandings()
-    if currentHudState == HudStates.Off then
+    -- Replaced by the round results in the Initial D cluster.
+    if useIdCluster or currentHudState == HudStates.Off then
         return
     end
 

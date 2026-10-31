@@ -10,6 +10,10 @@ local baseUrl = "http://" .. ac.getServerIP() .. ":" .. ac.getServerPortHTTP() .
 -- message locally. Keep it off for release builds.
 local debugHud = false
 
+-- Draws the Initial D in-race cluster (23_draw_cluster.lua) instead of the old standings
+-- panel. Set to false to get the old in-race HUD back.
+local useIdCluster = true
+
 ac.log('Touge hud.lua loaded')
 
 local HudStates = {

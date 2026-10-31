@@ -121,4 +121,66 @@ local layout = {
     countdown = {
         fontSize = 96,
     },
+
+    -- Initial D in-race cluster, anchored top-right: the advantage shell, the Driver vs Rival
+    -- shell below it, and the round results under that. Values inside the cluster are in the
+    -- shells' native pixels (positions from the D Extra app's D6 config), and shellScale
+    -- converts them to reference pixels so the shells are drawn 1:1 at 1080p.
+    cluster = {
+        shellScale = 1440 / 1080,
+        marginRight = 50, -- reference pixels
+        marginTop = 50,
+        size = vec2(552, 298),
+
+        advantage = {
+            image = assets.images.idAdvantage,
+            pos = vec2(0, 0),
+            size = vec2(552, 94),
+            -- The number reads "+1.30" / "-1.30": sign and whole seconds right-aligned to
+            -- integerRight, then the point and two decimals.
+            integerRight = 256,
+            integerY = 26,
+            integerSize = vec2(55, 61),
+            point = vec2(256, 26),
+            pointSize = vec2(20, 61),
+            pointUvMax = vec2(20 / 128, 1), -- the point is the first 20 columns of ". m"
+            decimalX = 274,
+            decimalY = 33,
+            decimalSize = vec2(49, 54),
+            redAt = -0.5, -- seconds behind at which the number is fully red
+            unknownColor = rgbm(1, 1, 1, 0.5),
+        },
+
+        names = {
+            image = assets.images.idNameExtended,
+            pos = vec2(52, 110),
+            size = vec2(500, 160),
+            rivalOffset = 90, -- the rival row is the driver row moved down
+            nameMin = vec2(100, 3), -- header strip, left of the baked-in "Pos"
+            nameMax = vec2(337, 39),
+            nameFontSize = 30,
+            carMin = vec2(40, 39), -- coloured band
+            carMax = vec2(460, 68),
+            carFontSize = 20,
+            position = vec2(374, -1),
+            positionSize = vec2(36, 40),
+            driverCarColor = rgbm(0.59, 0.75, 0.9, 1),
+            rivalCarColor = rgbm(1, 0.41, 0.53, 1),
+        },
+
+        rounds = {
+            y = 276,
+            label = vec2(112, 274),
+            labelFontSize = 16,
+            labelColor = rgbm(0.45, 0.6, 1, 1),
+            pipsRight = 492,
+            pipSize = vec2(34, 14),
+            pipSpacing = 8,
+            win = rgbm(0.34, 0.45, 0.87, 1),   -- blue, the driver's colour
+            loss = rgbm(1, 0.42, 0.53, 1),     -- pink, the rival's colour
+            tie = rgbm(0.6, 0.6, 0.6, 0.9),
+            pending = rgbm(1, 1, 1, 0.12),
+            border = rgbm(0.8, 0.85, 1, 0.6),
+        },
+    },
 }
