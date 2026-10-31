@@ -257,11 +257,11 @@ local function DrawChallengeTab(top, height, mousePos)
                 { text = "ELO", fill = GetEloColor(player.elo) },
                 status,
             },
-            caption = GetCarNameBySessionId(player.sessionId) or "DRIVER",
+            caption = player.carName or "DRIVER",
             name = player.name,
             detail = player.inRace and "Currently in a race" or "Click to select",
             busy = player.inRace,
-            image = GetCarPreviewPath(player.sessionId),
+            image = player.carPreview,
         }, player.id == selectedPlayerId)
         if clicked and player.id ~= selectedPlayerId then
             PlaySound("pick")
@@ -346,6 +346,22 @@ local function DrawChallengeTab(top, height, mousePos)
     end
 end
 
+-- A card row with a label on the left, used by the PROFILE and SETTINGS tabs. Rows are
+-- centered and stacked from top. Returns the row's corners.
+local function DrawLabelRow(index, top, label)
+    local m = layout.as6Panel.menu
+    local st = m.settings
+    local card = layout.as6Panel.card
+    local left = (m.width - st.rowWidth) / 2
+    local min = vec2(left, top + (index - 1) * st.rowStep)
+    local max = min + vec2(st.rowWidth, st.rowHeight)
+    Fill(min, max, card.fill, radii.card)
+    Outline(min, max, card.border, radii.card)
+    DrawShellText(label, fontSemiBold, st.labelFontSize, st.labelFontSize, min + vec2(st.labelX, 0),
+        vec2(min.x + st.controlX, max.y), card.mutedColor, ui.Alignment.Start)
+    return min, max
+end
+
 local function DrawProfileTab(top)
     local m = layout.as6Panel.menu
     local pr = m.profile
@@ -366,30 +382,11 @@ local function DrawProfileTab(top)
         { "Elo rating", tostring(displayElo) },
         { "Races completed", tostring(racesCompleted) },
     }
-    for i, stat in ipairs(stats) do
-        local y = top + card.size.y + pr.gap + (i - 1) * pr.statStep
-        local min = vec2(left, y)
-        local max = vec2(left + pr.cardWidth, y + pr.statHeight)
-        Fill(min, max, card.fill, radii.card)
-        Outline(min, max, card.border, radii.card)
-        DrawShellText(stat[1], fontSemiBold, pr.statFontSize, pr.statFontSize, min + vec2(16, 0), max, card.mutedColor, ui.Alignment.Start)
-        DrawShellText(stat[2], fontBold, pr.statFontSize, pr.statFontSize, min, max - vec2(16, 0), card.textColor, ui.Alignment.End)
-    end
-end
-
--- One row of the SETTINGS tab: card background and label. Returns the row's corners.
-local function DrawSettingsRow(index, top, label)
-    local m = layout.as6Panel.menu
     local st = m.settings
-    local card = layout.as6Panel.card
-    local left = (m.width - st.rowWidth) / 2
-    local min = vec2(left, top + (index - 1) * st.rowStep)
-    local max = min + vec2(st.rowWidth, st.rowHeight)
-    Fill(min, max, card.fill, radii.card)
-    Outline(min, max, card.border, radii.card)
-    DrawShellText(label, fontSemiBold, st.labelFontSize, st.labelFontSize, min + vec2(st.labelX, 0),
-        vec2(min.x + st.controlX, max.y), card.mutedColor, ui.Alignment.Start)
-    return min, max
+    for i, stat in ipairs(stats) do
+        local min, max = DrawLabelRow(i, top + card.size.y + pr.gap, stat[1])
+        DrawShellText(stat[2], fontBold, st.labelFontSize, st.labelFontSize, min, max - vec2(st.labelX, 0), card.textColor, ui.Alignment.End)
+    end
 end
 
 local function DrawSettingsTab(top, mousePos)
@@ -399,7 +396,7 @@ local function DrawSettingsTab(top, mousePos)
     local s = ShellScale()
 
     -- Sound on / off
-    local min, max = DrawSettingsRow(1, top, "Sound")
+    local min, max = DrawLabelRow(1, top, "Sound")
     local pillMin = vec2(min.x + st.controlX, min.y + (st.rowHeight - st.pillSize.y) / 2)
     if DrawPill(pillMin, pillMin + st.pillSize, "ON", layout.as6Panel.toggle.fontSize, settings.soundEnabled, mousePos) then
         settings.soundEnabled = true
@@ -412,7 +409,7 @@ local function DrawSettingsTab(top, mousePos)
 
     -- Volume slider: drag along the track or use the mouse wheel over the row. A preview
     -- plays when the drag ends.
-    min, max = DrawSettingsRow(2, top, "Volume")
+    min, max = DrawLabelRow(2, top, "Volume")
     local trackMin = vec2(min.x + st.controlX, min.y + (st.rowHeight - st.trackHeight) / 2)
     local trackMax = vec2(max.x - st.labelX - st.valueWidth, trackMin.y + st.trackHeight)
     local width = trackMax.x - trackMin.x
@@ -423,7 +420,7 @@ local function DrawSettingsTab(top, mousePos)
         isDraggingVolume = true
     end
     if isDraggingVolume then
-        if ui.mouseDown() then
+        if ui.mouseDown() and hasInviteMenuOpen then
             settings.soundVolume = math.max(0, math.min(1, (mousePos.x / s - trackMin.x) / width))
         else
             isDraggingVolume = false
@@ -499,7 +496,8 @@ local function ContentHeight(tab)
     local card = layout.as6Panel.card
     if tab == "profile" then
         local pr = m.profile
-        return card.size.y + pr.gap + 2 * pr.statStep - (pr.statStep - pr.statHeight)
+        local st = m.settings
+        return card.size.y + pr.gap + 2 * st.rowStep - (st.rowStep - st.rowHeight)
     elseif tab == "settings" then
         local st = m.settings
         return 2 * st.rowStep - (st.rowStep - st.rowHeight)

@@ -197,12 +197,10 @@ local layout = {
             profile = {
                 cardWidth = 600,
                 gap = 12, -- between the card and the stat rows
-                statHeight = 40,
-                statStep = 48,
-                statFontSize = 20,
             },
 
             -- Rows of the SETTINGS tab, centered: a label on the left, the control on the right.
+            -- The PROFILE stat rows use the same row size.
             settings = {
                 rowWidth = 600,
                 rowHeight = 48,

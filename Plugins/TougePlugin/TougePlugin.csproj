@@ -7,7 +7,7 @@
 
     <ItemGroup>
         <!-- Includes the parts of split scripts, such as lua\hud\*.lua. -->
-        <None Update="lua\**\*.lua">
+        <None Update="lua\**\*.lua;lua\**\parts.txt">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>

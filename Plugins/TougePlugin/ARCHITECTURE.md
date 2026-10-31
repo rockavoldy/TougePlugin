@@ -83,7 +83,7 @@ the Lua scripts under `lua/` are the reference client implementation of that con
 2. **Provide Lua scripts** — reads and registers `teleport.lua`, `hud.lua`, `timing.lua`
    with the server's `CSPServerScriptProvider`, so they are pushed to every
    client automatically. A script can be split into parts in a folder named after it
-   (`lua/hud/` for `hud.lua`); the parts are joined in file name order into one script.
+   (`lua/hud/` for `hud.lua`); the parts listed in its `parts.txt` are joined in that order into one script.
 3. **Database setup** —
    - `IsDbLocalMode == true` → `SqliteConnectionFactory("plugins/TougePlugin/database.db")`
    - otherwise → `PostgresConnectionFactory(PostgresqlConnectionString)`

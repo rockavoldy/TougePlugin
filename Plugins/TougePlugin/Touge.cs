@@ -162,15 +162,18 @@ public class Touge : BackgroundService, IHostedService
         string luaDirectory = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "lua");
 
         // A script can be split into parts in a folder named after it (lua/hud/ for hud.lua).
-        // The parts are joined in ordinal file name order into a single chunk, so locals
-        // declared in an earlier part are visible in later ones, exactly as in one file.
+        // The parts listed in its parts.txt are joined in that order into a single chunk, so
+        // locals declared in an earlier part are visible in later ones, exactly as in one file.
+        // Only listed files are read, so parts left over from an older install are ignored.
         string partsDirectory = Path.Join(luaDirectory, Path.GetFileNameWithoutExtension(scriptName));
+        string manifestPath = Path.Join(partsDirectory, "parts.txt");
         string script;
-        if (Directory.Exists(partsDirectory))
+        if (File.Exists(manifestPath))
         {
-            var parts = Directory.GetFiles(partsDirectory, "*.lua")
-                .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
-                .Select(path => $"-- ==== {Path.GetFileName(path)} ====\n{File.ReadAllText(path)}");
+            var parts = File.ReadAllLines(manifestPath)
+                .Select(line => line.Trim())
+                .Where(line => line.Length > 0 && !line.StartsWith('#'))
+                .Select(name => $"-- ==== {name} ====\n{File.ReadAllText(Path.Join(partsDirectory, name))}");
             script = string.Join("\n", parts);
         }
         else

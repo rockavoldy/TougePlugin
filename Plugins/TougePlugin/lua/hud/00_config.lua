@@ -1,8 +1,9 @@
 -- Touge HUD client script.
 --
--- The server joins every file in lua/hud/ in file name order into a single script named
--- hud.lua (see Touge.ProvideScript), so locals declared in an earlier file are visible in
--- later ones. Keep the numeric prefixes when adding files: they define the load order.
+-- The server joins the files listed in lua/hud/parts.txt, in that order, into a single script
+-- named hud.lua (see Touge.ProvideScript), so locals declared in an earlier file are visible
+-- in later ones. Add new files to parts.txt; the numeric prefixes keep the folder in the same
+-- order.
 
 local baseUrl = "http://" .. ac.getServerIP() .. ":" .. ac.getServerPortHTTP() .. "/static/TougePlugin/"
 

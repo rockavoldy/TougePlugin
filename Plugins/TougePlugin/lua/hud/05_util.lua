@@ -86,12 +86,6 @@ local function GetCarPreviewPath(sessionId)
     return carPreviewCache[key] or nil
 end
 
--- Name of the car with the given session ID, or nil when there is no such car.
-local function GetCarNameBySessionId(sessionId)
-    local c = FindCarBySessionId(sessionId)
-    return c ~= nil and ac.getCarName(c.index) or nil
-end
-
 local function checkTimeout(activatedAt, duration)
     if activatedAt ~= nil and os.clock() - activatedAt >= duration then
         return true

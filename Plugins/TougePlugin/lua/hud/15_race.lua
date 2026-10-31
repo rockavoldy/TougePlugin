@@ -83,7 +83,9 @@ local function UpdateRace(dt)
         race.position = nil
         race.gapMeters = 0
         race.gapSeconds = nil
-        histories = {}
+        if next(histories) ~= nil then
+            histories = {}
+        end
         return
     end
 

@@ -95,6 +95,9 @@ public class TougeCommandModule : ACModuleBase
     {
         foreach (string step in new[] { "Ready...", "Set...", "Go!" })
         {
+            // The admin may have left during the delay.
+            if (Client is not { IsConnected: true })
+                return;
             Touge.SendNotification(Client, step, true);
             await Task.Delay(1000);
         }

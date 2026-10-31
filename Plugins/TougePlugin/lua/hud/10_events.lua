@@ -100,6 +100,10 @@ local function OnLobbyStatus(message)
             elo = message['nearbyElo' .. i],
             sessionId = message['nearbySessionId' .. i],
         }
+        -- Looked up once here rather than every frame the menu draws.
+        local c = FindCarBySessionId(nearbyPlayers[i].sessionId)
+        nearbyPlayers[i].carName = c ~= nil and ac.getCarName(c.index) or nil
+        nearbyPlayers[i].carPreview = GetCarPreviewPath(nearbyPlayers[i].sessionId)
     end
 end
 
