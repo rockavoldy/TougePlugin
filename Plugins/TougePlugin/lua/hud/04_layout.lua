@@ -226,11 +226,13 @@ local layout = {
                 barBottom = 14,
             },
 
-            -- Countdown text centered on the screen on a frosted plate.
+            -- Countdown text centered on the screen, with a drop shadow and no plate behind it.
             countdown = {
-                height = 110,
+                height = 110, -- room around the text for its pop-in
                 paddingX = 56,
                 fontSize = 72,
+                shadowOffset = 3,
+                shadowColor = rgbm(0, 0, 0, 0.6),
                 readyColor = rgbm(0.95, 0.96, 0.98, 1),
                 setColor = rgbm(1, 0.85, 0.4, 1),
                 goColor = rgbm(0.3, 0.8, 0.42, 1),

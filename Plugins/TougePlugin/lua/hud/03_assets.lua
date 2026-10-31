@@ -7,7 +7,7 @@ local assets = {
     },
     fontsZip = baseUrl .. "fonts.zip?v=2",
     countdownZip = baseUrl .. "countdown.zip?v=4-beeps",
-    soundsZip = baseUrl .. "sounds.zip?v=1",
+    soundsZip = baseUrl .. "sounds.zip?v=2",
     -- Digit sprites from the D Extra app's D6 theme, the same theme as the id/ shells.
     idDigitsZip = baseUrl .. "id/id_digits.zip?v=2",
 }
