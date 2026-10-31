@@ -113,7 +113,7 @@ local function DrawRounds()
 end
 
 local function DrawCluster()
-    if not useIdHud or currentHudState == HudStates.Off or idSprites == nil then
+    if currentHudState == HudStates.Off or idSprites == nil then
         return
     end
 

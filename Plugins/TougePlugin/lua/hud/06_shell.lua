@@ -28,22 +28,3 @@ local function DrawShellText(text, textFont, fontSize, minFontSize, rectMin, rec
         horizontal, ui.Alignment.Center, false, color)
     ui.popDWriteFont()
 end
-
--- Draws a header label (such as the shells' "DRIVER") at shell position pos.
-local function DrawShellLabel(text, pos, fontSize, color)
-    ui.pushDWriteFont(fontSemiBold)
-    ui.dwriteDrawText(text, scaling.size(fontSize * layout.shellScale), pos * ShellScale(), color)
-    ui.popDWriteFont()
-end
-
--- Draws a number with position-digit sprites, centered on shell x centerX.
-local function DrawShellNumber(value, centerX, y, digitSize, color)
-    local text = tostring(math.floor(value + 0.5))
-    local left = centerX - #text * digitSize.x / 2
-    for i = 1, #text do
-        local digit = tonumber(text:sub(i, i))
-        if digit ~= nil then
-            DrawShellSprite(idSprites.positionDigits[digit], vec2(left + (i - 1) * digitSize.x, y), digitSize, color)
-        end
-    end
-end

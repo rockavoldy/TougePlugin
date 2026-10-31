@@ -4,25 +4,12 @@ function script.drawUI(dt)
     windowWidth = sim.windowWidth
     windowHeight = sim.windowHeight
 
-    DrawStandings()
-    if useIdHud then
-        DrawEloCard()
-        DrawMenuHint()
-        DrawTougeMenu()
-    else
-        DrawElo()
-        DrawTutorial()
-        DrawInviteMenu()
-        DrawCourseSelect()
-    end
+    DrawEloCard()
+    DrawMenuHint()
+    DrawTougeMenu()
     DrawCluster()
-    if useIdHud then
-        DrawAs6Countdown()
-        DrawAs6Popups()
-    else
-        DrawCountdown()
-        DrawPopups()
-    end
+    DrawCountdown()
+    DrawPopups()
 end
 
 function script.update(dt)

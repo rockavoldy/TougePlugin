@@ -10,10 +10,6 @@ local baseUrl = "http://" .. ac.getServerIP() .. ":" .. ac.getServerPortHTTP() .
 -- message locally. Keep it off for release builds.
 local debugHud = false
 
--- Draws the Initial D restyle (the in-race cluster and the restyled elements) instead of
--- the old HUD. Set to false to get the old HUD back.
-local useIdHud = true
-
 ac.log('Touge hud.lua loaded')
 
 local HudStates = {
@@ -30,11 +26,4 @@ local RaceResults = {
     Win = 1,
     Loss = 2,
     Tie = 3,
-}
-
-local keyBindings = {
-    { key = "N", description = "Invite\nnearby" },
-    { key = "I", description = "Invite\nmenu" },
-    { key = "F", description = "Forfeit\n"},
-    { key = "H", description = "Hide\ntutorial" },
 }

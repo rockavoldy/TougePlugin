@@ -23,26 +23,6 @@ local function GetEloColor(eloValue)
     return rgbm(r, g, b, 1)
 end
 
-local function GetAvatarPath(steamId)
-    local id = tostring(steamId):gsub("%D+$", "")
-    return assets.avatars .. id .. ".jpg"
-end
-
--- Draws the avatar of a player card whose top-left corner is cardPos (screen units).
-local function DrawAvatar(playerId, cardPos)
-    if loadSteamAvatars then
-        local avatarMin = cardPos + scaling.size(layout.card.avatar)
-        ui.drawImage(GetAvatarPath(playerId), avatarMin, avatarMin + scaling.size(layout.card.avatarSize))
-    end
-end
-
--- fontSize is in reference pixels, pos in screen units.
-local function DrawText(content, textFont, fontSize, pos)
-    ui.pushDWriteFont(textFont)
-    ui.dwriteDrawText(tostring(content), scaling.size(fontSize), pos)
-    ui.popDWriteFont()
-end
-
 -- Returns the largest font size (reference pixels) up to startSize at which text fits in
 -- maxWidth reference pixels.
 local function FindFontSize(text, startSize, textFont, maxWidth)
@@ -53,14 +33,6 @@ local function FindFontSize(text, startSize, textFont, maxWidth)
     end
     ui.popDWriteFont()
     return fontSize
-end
-
--- Draws the small Elo badge with its top-left corner at pos (screen units).
-local function DrawEloBadge(eloValue, pos)
-    local badge = layout.eloBadge
-    ui.drawImage(layout.elo.image, pos, pos + scaling.size(badge.size), GetEloColor(eloValue))
-    local textOffset = eloValue < 1000 and badge.textBelow1000 or badge.text
-    DrawText(eloValue, fontBold, badge.fontSize, pos + scaling.size(textOffset))
 end
 
 local function IsInRect(point, rectMin, rectMax)

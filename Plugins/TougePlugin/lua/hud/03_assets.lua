@@ -2,24 +2,13 @@
 -- Bump the ?v= suffix of a file whenever its content changes, or clients keep the cached copy.
 local assets = {
     images = {
-        elo = baseUrl .. "Elo.png",
-        standings = baseUrl .. "Standings.png",
-        playerCard = baseUrl .. "PlayerCard.png",
-        mKey = baseUrl .. "MKey.png",
-        inviteMenu = baseUrl .. "InviteMenu.png",
-        tutorial = baseUrl .. "Tutorial.png",
-        key = baseUrl .. "Key.png",
-        toggle = baseUrl .. "Toggle.png",
-        idNameExtended = baseUrl .. "id/name_background_extended.png?v=1",
-        -- name_background.png without its baked-in labels (tools/blank_name_shell.py).
-        idNameBlank = baseUrl .. "id/name_background_blank.png?v=1",
-        idAdvantage = baseUrl .. "id/advantage_background.png?v=1",
+        idNameExtended = baseUrl .. "id/name_background_extended.png?v=2",
+        idAdvantage = baseUrl .. "id/advantage_background.png?v=2",
     },
-    avatars = baseUrl .. "avatars/",
-    fontsZip = baseUrl .. "fonts.zip",
+    fontsZip = baseUrl .. "fonts.zip?v=2",
     countdownZip = baseUrl .. "countdown.zip?v=4-beeps",
     -- Digit sprites from the D Extra app's D6 theme, the same theme as the id/ shells.
-    idDigitsZip = baseUrl .. "id/id_digits.zip?v=1",
+    idDigitsZip = baseUrl .. "id/id_digits.zip?v=2",
 }
 
 local font = ""

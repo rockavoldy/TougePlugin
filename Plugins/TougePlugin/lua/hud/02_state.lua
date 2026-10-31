@@ -4,7 +4,6 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 
 local discreteMode = false
-local loadSteamAvatars = false
 
 -- elo is the displayed value, animated towards targetElo. -1 means unknown.
 local elo = -1
@@ -17,19 +16,17 @@ local racesCompleted = 0
 
 local inviteSenderName = ""
 local inviteSenderElo = -1
-local inviteSenderId = ""
 local inviteCourseName = ""
 local hasActiveInvite = false
 local inviteActivatedAt = nil
 
 local hasInviteMenuOpen = false
-local hasCourseSelectOpen = false
 local nearbyPlayers = {}
 local selectedPlayerId = -1
 local lastLobbyStatusRequest = 0
 local lobbyCooldown = 1.0  -- Cooldown in seconds
 local courseNames = {}
-local courseScroll = 0 -- first visible row of the Initial D course list
+local courseScroll = 0 -- first visible row of the course list
 local selectedCourseIndex = 1
 local menuTab = "challenge" -- "challenge", "profile" or "howto"
 local showRaceTypeToggle = false

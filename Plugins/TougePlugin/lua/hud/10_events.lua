@@ -33,7 +33,6 @@ local function OnInvite(message)
         hasActiveInvite = true
         inviteSenderName = message.inviteSenderName
         inviteSenderElo = message.inviteSenderElo
-        inviteSenderId = message.inviteSenderId
         inviteCourseName = message.courseName or ""
         inviteActivatedAt = os.clock()
     end
@@ -59,10 +58,8 @@ end
 
 local function OnInitialization(message)
     ac.debug('AS_Initialization.discreteMode', message.discreteMode)
-    ac.debug('AS_Initialization.loadSteamAvatars', message.loadSteamAvatars)
     ac.debug('AS_Initialization.useTrackFinish', message.useTrackFinish)
 
-    loadSteamAvatars = message.loadSteamAvatars
     showRaceTypeToggle = message.showRaceTypeToggle
 
     discreteMode = message.discreteMode

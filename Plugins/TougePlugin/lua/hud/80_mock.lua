@@ -54,7 +54,7 @@ if debugHud then
             inviteSenderName = name,
             inviteRecipientGuid = 0,
             inviteSenderElo = 1234,
-            inviteSenderId = "0",
+            inviteSenderId = "0", -- part of the packet; the HUD does not use it
             courseName = "",
             isCourse = true,
         })
@@ -74,7 +74,6 @@ if debugHud then
             message['nearbySessionId' .. i] = present and car.sessionID or -1
         end
         OnLobbyStatus(message)
-        hasCourseSelectOpen = false
         hasInviteMenuOpen = true
     end
 
@@ -94,7 +93,6 @@ if debugHud then
         hasIncomingNotification = false
         isCountdownHudActive = false
         hasInviteMenuOpen = false
-        hasCourseSelectOpen = false
         nearbyPlayers = {}
         mockActive = false
         -- The server answers with the real Elo and settings.
@@ -154,32 +152,23 @@ if debugHud then
         ui.text("Initialization (Elo counts up from 100 below)")
         if ui.checkbox("Discrete mode", mockDiscrete) then mockDiscrete = not mockDiscrete end
         if ui.checkbox("Race type toggle", mockToggle) then mockToggle = not mockToggle end
-        if ui.checkbox("8 courses (opens course select)", mockManyCourses) then mockManyCourses = not mockManyCourses end
+        if ui.checkbox("8 courses", mockManyCourses) then mockManyCourses = not mockManyCourses end
         if ui.button("Send initialization") then MockInitialization() end
 
         ui.separator()
-        ui.text("Invite menu")
+        ui.text("Menu")
         if ui.button("0 players") then MockLobbyStatus(0) end
         ui.sameLine()
         if ui.button("1 player") then MockLobbyStatus(1) end
         ui.sameLine()
         if ui.button("5 players") then MockLobbyStatus(5) end
-        ui.sameLine()
-        if useIdHud then
-            -- The course select is part of the integrated menu's Challenge tab.
-            for _, tab in ipairs({ { "challenge", "Challenge" }, { "profile", "Profile" }, { "howto", "How to play" } }) do
-                ui.sameLine()
-                if ui.button("Menu: " .. tab[2]) then
-                    mockActive = true
-                    menuTab = tab[1]
-                    hasInviteMenuOpen = true
-                end
+        for _, tab in ipairs({ { "challenge", "Challenge" }, { "profile", "Profile" }, { "howto", "How to play" } }) do
+            ui.sameLine()
+            if ui.button("Menu: " .. tab[2]) then
+                mockActive = true
+                menuTab = tab[1]
+                hasInviteMenuOpen = true
             end
-        elseif ui.button("Course select") then
-            mockActive = true
-            hasInviteMenuOpen = false
-            hasCourseSelectOpen = true
-            selectedPlayerId = 1
         end
 
         ui.separator()
@@ -205,7 +194,7 @@ if debugHud then
         end
 
         ui.separator()
-        ui.text("Tutorial")
+        ui.text("Menu hint")
         if ui.checkbox("Hidden", hasTutorialHidden) then hasTutorialHidden = not hasTutorialHidden end
         if ui.checkbox("Auto-hidden (shows only below 10 km/h)", isTutorialAutoHidden) then
             isTutorialAutoHidden = not isTutorialAutoHidden

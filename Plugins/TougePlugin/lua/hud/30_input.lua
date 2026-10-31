@@ -11,16 +11,12 @@ local function InputCheck()
         SendToServer(inviteEvent, {inviteSenderName = "nearby", inviteRecipientGuid = 1})
     end
     if KeyPressed(ui.KeyIndex.I) then
-        if hasCourseSelectOpen then
-            hasCourseSelectOpen = false
-        else
-            hasInviteMenuOpen = not hasInviteMenuOpen
-            if hasInviteMenuOpen then
-                local now = os.clock()
-                if now - lastLobbyStatusRequest > lobbyCooldown then
-                    lastLobbyStatusRequest = now
-                    SendToServer(lobbyStatusEvent)
-                end
+        hasInviteMenuOpen = not hasInviteMenuOpen
+        if hasInviteMenuOpen then
+            local now = os.clock()
+            if now - lastLobbyStatusRequest > lobbyCooldown then
+                lastLobbyStatusRequest = now
+                SendToServer(lobbyStatusEvent)
             end
         end
     end

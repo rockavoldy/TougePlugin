@@ -1,132 +1,12 @@
--- Layout tables. One table per HUD element: its image, native size, screen anchor and the
--- positions of everything drawn on top of it. All values are reference pixels (see
--- 01_scaling.lua) relative to the element's top-left corner unless noted otherwise.
+-- Layout tables. One table per HUD element: its size, screen anchor, colours and the
+-- positions of everything drawn in it. Values are shell pixels (see 06_shell.lua) relative
+-- to the element's top-left corner unless noted otherwise.
 local layout = {
-    elo = {
-        image = assets.images.elo,
-        pos = vec2(50, 50), -- from the top-left of the screen
-        size = vec2(196, 82),
-        label = vec2(11, 31),
-        number = vec2(66, 26),
-        numberBelow1000 = vec2(76, 26),
-    },
-
-    -- Small Elo badge on player cards: the Elo image at half size.
-    eloBadge = {
-        size = vec2(98, 41),
-        text = vec2(32, 12),
-        textBelow1000 = vec2(38, 12),
-        fontSize = 16,
-    },
-
-    standings = {
-        image = assets.images.standings,
-        marginLeft = 50, -- vertically anchored at the screen centre
-        size = vec2(387, 213),
-        title = vec2(44, 37),
-        pipY = 145,
-        pipRadius = 25,
-        pipSpacing = 40,
-        suddenDeathTitle = vec2(44, 80),
-        suddenDeathBody = vec2(44, 120),
-        result = vec2(44, 90),
-    },
-
-    tutorial = {
-        image = assets.images.tutorial,
-        marginLeft = 50,
-        marginBottom = 50,
-        size = vec2(584, 415),
-        title = vec2(32, 32),
-        body = vec2(32, 78),
-        controlsTitle = vec2(32, 177),
-        keys = {
-            image = assets.images.key,
-            first = vec2(62, 215),
-            spacingX = 120,
-            size = 88,
-            fontSize = 32,
-            label = vec2(8, 96), -- relative to the key
-            labelFontSize = 18,
-        },
-    },
-
-    -- Shared by the invite menu and the course select screen.
-    panel = {
-        image = assets.images.inviteMenu,
-        marginRight = 50,
-        marginTop = 50,
-        size = vec2(768, 1145),
-        title = vec2(40, 40),
-        titleFontSize = 48,
-        listTop = 150,
-        rowSpacing = 180,
-        scrollSize = vec2(768, 1130),
-        toggle = {
-            image = assets.images.toggle,
-            min = vec2(305, 31),
-            max = vec2(736, 106),
-            courseLabel = vec2(334, 50),
-            outrunLabel = vec2(545, 50),
-            fontSize = 36,
-        },
-    },
-
-    -- A player or course row in the panel.
-    card = {
-        image = assets.images.playerCard,
-        x = 32,
-        size = vec2(705, 172),
-        avatar = vec2(41, 34),
-        avatarSize = 106,
-        name = vec2(180, 40),
-        nameClip = vec2(737, 172), -- clip rectangle size, from the name position
-        nameFontSize = 48,
-        nameMaxWidth = 550,
-        eloBadge = vec2(180, 95),
-    },
-
-    -- Bottom-right popups (invite, notification, forfeit) stack upwards in that order.
-    popup = {
-        image = assets.images.playerCard,
-        marginRight = 50,
-        marginBottom = 50,
-        size = vec2(705, 172),
-        stackStep = 192,
-    },
-
-    invite = {
-        eloBadge = vec2(182, 40),
-        mKeyImage = assets.images.mKey,
-        mKeyMin = vec2(560, 32),
-        mKeyMax = vec2(670, 142),
-        name = vec2(295, 35),
-        nameFontSize = 48,
-        nameMaxWidth = 270,
-        subtitle = vec2(180, 95),
-        subtitleFontSize = 36,
-    },
-
-    notification = {
-        textMin = vec2(170, 0),
-        textMax = vec2(650, 172),
-        fontSize = 18,
-    },
-
-    forfeit = {
-        text = vec2(179, 40),
-        fontSize = 18,
-    },
-
-    countdown = {
-        fontSize = 96,
-    },
-
     -- Initial D elements are laid out in the shells' native pixels; shellScale converts
     -- them to reference pixels so the shells are drawn 1:1 at 1080p (see 06_shell.lua).
     shellScale = 1440 / 1080,
 
-    -- Compact Elo card, top-left, in the style of the menu cards: the Elo in a white box,
+    -- Compact Elo card, top-left, in the style of the menu cards: the Elo in a dark box,
     -- the player's name and an Elo-coloured chip beside it.
     eloCard = {
         pos = vec2(50, 50), -- reference pixels from the top-left of the screen
@@ -144,14 +24,19 @@ local layout = {
 
     -- Menus in the style of the Initial D Arcade Stage 6 menus, in a dark theme that sits
     -- with the race HUD: a steel title bar, a subtitle pill and dark cards with a gold frame
-    -- on hover. Placeholder drawn in code until real shells exist; every size and
-    -- colour is here so images can replace the shapes later.
+    -- on hover. Drawn in code; every size and colour is here so images can replace the
+    -- shapes later.
     as6Panel = {
-        marginRight = 50, -- reference pixels
-        marginTop = 50,
-        width = 520,
-        maxVisibleRows = 8, -- more course cards scroll with the mouse wheel
-        bottomPadding = 12,
+        -- Animation times in seconds, and slide distances in shell pixels (see 07_tween.lua).
+        motion = {
+            fade = 0.25, -- Elo card and menu hint
+            menu = 0.18,
+            menuSlide = 16, -- the menu rises into place
+            popup = 0.25,
+            popupSlide = 60, -- popups slide in from the right
+            countdown = 0.3,
+            countdownPop = 1.3, -- each countdown step starts this much larger
+        },
 
         -- Corner radii, shared by every shape so the corners match: the window, cards and
         -- buttons, boxes inside a card, and chips. Pills are fully round.
@@ -168,8 +53,7 @@ local layout = {
         },
 
         title = {
-            min = vec2(0, 0),
-            max = vec2(520, 50),
+            height = 50,
             top = rgbm(0.2, 0.24, 0.31, 0.97), -- dark steel gradient
             bottom = rgbm(0.1, 0.12, 0.17, 0.97),
             highlight = rgbm(0.55, 0.65, 0.8, 0.6),
@@ -178,8 +62,6 @@ local layout = {
         },
 
         subtitle = {
-            min = vec2(40, 58),
-            max = vec2(480, 82),
             fill = rgbm(0.1, 0.13, 0.18, 0.9),
             border = rgbm(0.35, 0.42, 0.52, 0.8),
             fontSize = 14,
@@ -188,7 +70,6 @@ local layout = {
 
         -- Course / Outrun pills under the subtitle.
         toggle = {
-            y = 92,
             size = vec2(140, 28),
             gap = 12,
             fontSize = 15,
@@ -198,11 +79,7 @@ local layout = {
             selectedText = rgbm(1, 1, 1, 1),
         },
 
-        listTop = 92,
-        listTopWithToggle = 130,
-
         card = {
-            x = 12,
             size = vec2(496, 92),
             step = 100,
             fill = rgbm(0.11, 0.13, 0.17, 0.94),

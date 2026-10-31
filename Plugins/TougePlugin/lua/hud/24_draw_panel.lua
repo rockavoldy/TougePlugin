@@ -1,7 +1,7 @@
--- The integrated Touge menu, in the style of the Initial D Arcade Stage 6 menus (see
--- layout.as6Panel): one centered window with CHALLENGE, PROFILE and HOW TO PLAY tabs, a
--- banner for a pending challenge, and a small hint in place of the old tutorial panel.
--- Drawn in code as a placeholder; coordinates are shell pixels relative to the window.
+-- The Touge menu, in the style of the Initial D Arcade Stage 6 menus (see layout.as6Panel):
+-- one centered window with CHALLENGE, PROFILE and HOW TO PLAY tabs, a banner for a pending
+-- challenge, a small menu hint and the Elo card. Coordinates are shell pixels relative to
+-- the window.
 
 local radii = layout.as6Panel.radius
 
@@ -188,9 +188,9 @@ local function DrawMenuHeader(subtitle, mousePos)
     local p = layout.as6Panel
     local m = p.menu
     local t = p.title
-    VerticalGradient(vec2(0, 0), vec2(m.width, t.max.y), t.top, t.bottom, radii.window, true)
+    VerticalGradient(vec2(0, 0), vec2(m.width, t.height), t.top, t.bottom, radii.window, true)
     Fill(vec2(radii.window, 0), vec2(m.width - radii.window, 2), t.highlight)
-    DrawShellText("TOUGE", fontBold, t.fontSize, t.fontSize, m.titleText, vec2(400, t.max.y), t.color, ui.Alignment.Start)
+    DrawShellText("TOUGE", fontBold, t.fontSize, t.fontSize, m.titleText, vec2(400, t.height), t.color, ui.Alignment.Start)
 
     local tb = m.tabs
     for i, tab in ipairs(tabs) do
@@ -431,40 +431,46 @@ local subtitles = {
 }
 
 local function DrawTougeMenu()
-    if not hasInviteMenuOpen then
+    local motion = layout.as6Panel.motion
+    local shown = Tween("menu", hasInviteMenuOpen, motion.menu)
+    if shown <= 0 then
         return
     end
 
     local m = layout.as6Panel.menu
+    local s = ShellScale()
     local top = m.contentTop + (hasActiveInvite and m.bannerSpace or 0)
     local height = top + ContentHeight(menuTab) + m.padding
-    local size = vec2(m.width, height) * ShellScale()
-    local pos = (vec2(windowWidth, windowHeight) - size) / 2
+    local size = vec2(m.width, height) * s
+    local pos = (vec2(windowWidth, windowHeight) - size) / 2 + vec2(0, (1 - shown) * motion.menuSlide * s)
     ui.transparentWindow("tougeMenuWindow", pos, size, function ()
-        DrawAs6Backdrop(pos, size)
-        local mousePos = ui.mouseLocalPos()
-        DrawMenuHeader(subtitles[menuTab] or subtitles.challenge, mousePos)
+        DrawFaded(shown, size, function ()
+            DrawAs6Backdrop(pos, size)
+            -- A closing menu no longer reacts to the mouse.
+            local mousePos = hasInviteMenuOpen and ui.mouseLocalPos() or vec2(-1e6, -1e6)
+            DrawMenuHeader(subtitles[menuTab] or subtitles.challenge, mousePos)
 
-        if hasActiveInvite then
-            DrawInviteBanner(mousePos)
-        end
+            if hasActiveInvite then
+                DrawInviteBanner(mousePos)
+            end
 
-        if menuTab == "profile" then
-            DrawProfileTab(top)
-        elseif menuTab == "howto" then
-            DrawHowToTab(top)
-        else
-            DrawChallengeTab(top, height, mousePos)
-        end
+            if menuTab == "profile" then
+                DrawProfileTab(top)
+            elseif menuTab == "howto" then
+                DrawHowToTab(top)
+            else
+                DrawChallengeTab(top, height, mousePos)
+            end
+        end)
     end)
 end
 
--- Small pill in place of the old tutorial panel, under the same conditions.
+-- Small pill reminding of the menu key, hidden with H and while driving once auto-hidden.
 local function DrawMenuHint()
-    if hasTutorialHidden or hasInviteMenuOpen then
-        return
-    end
-    if isTutorialAutoHidden and not (car ~= nil and car.speedKmh < 10) then
+    local visible = not hasTutorialHidden and not hasInviteMenuOpen
+        and not (isTutorialAutoHidden and not (car ~= nil and car.speedKmh < 10))
+    local shown = Tween("hint", visible, layout.as6Panel.motion.fade)
+    if shown <= 0 then
         return
     end
 
@@ -473,33 +479,42 @@ local function DrawMenuHint()
     local size = hint.size * ShellScale()
     local pos = vec2(scaling.size(hint.marginLeft), windowHeight - scaling.size(hint.marginBottom) - size.y)
     ui.transparentWindow("tougeMenuHint", pos, size, function ()
-        local radius = hint.size.y / 2
-        Fill(vec2(0, 0), hint.size, st.fill, radius)
-        Outline(vec2(0, 0), hint.size, st.border, radius)
-        InsetText("I  Touge menu   ·   H  hide", fontSemiBold, hint.fontSize, hint.fontSize * 0.8, vec2(0, 0), hint.size, st.color, radius)
+        DrawFaded(shown, size, function ()
+            local radius = hint.size.y / 2
+            Fill(vec2(0, 0), hint.size, st.fill, radius)
+            Outline(vec2(0, 0), hint.size, st.border, radius)
+            InsetText("I  Touge menu   ·   H  hide", fontSemiBold, hint.fontSize, hint.fontSize * 0.8, vec2(0, 0), hint.size, st.color, radius)
+        end)
     end)
 end
 
--- Compact Elo card, top-left, shown whenever the Elo is known.
+-- Compact Elo card, top-left, shown whenever the Elo is known (and, in discrete mode, for a
+-- while after it changes).
+local function DrawEloCardContent()
+    local l = layout.eloCard
+    local c = layout.as6Panel.card
+    local displayElo = math.floor(math.max(elo, 0) + 0.5)
+    VerticalGradient(vec2(0, 0), l.size, c.infoTop, c.infoBottom, radii.card)
+    Outline(vec2(0, 0), l.size, c.border, radii.card)
+
+    Fill(l.boxMin, l.boxMax, c.boxFill, radii.inner)
+    Outline(l.boxMin, l.boxMax, c.boxBorder, radii.inner)
+    InsetText(tostring(displayElo), fontBold, l.boxFontSize, l.boxFontSize * 0.7, l.boxMin, l.boxMax, c.boxColor)
+
+    DrawShellText(ac.getDriverName(0), fontBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, c.textColor, ui.Alignment.Start)
+    local chipMax = l.chipMin + l.chipSize
+    Fill(l.chipMin, chipMax, GetEloColor(displayElo), radii.chip)
+    InsetText("ELO", fontSemiBold, c.chipFontSize, c.chipFontSize, l.chipMin, chipMax, c.chipText, layout.as6Panel.chipTextInset)
+end
+
 local function DrawEloCard()
-    if elo == -1 or not showElo then
+    local shown = Tween("elo", elo ~= -1 and showElo, layout.as6Panel.motion.fade)
+    if shown <= 0 or elo == -1 then
         return
     end
 
-    local l = layout.eloCard
-    local c = layout.as6Panel.card
-    ui.transparentWindow("eloWindow", scaling.size(l.pos), l.size * ShellScale(), function ()
-        local displayElo = math.floor(math.max(elo, 0) + 0.5)
-        VerticalGradient(vec2(0, 0), l.size, c.infoTop, c.infoBottom, radii.card)
-        Outline(vec2(0, 0), l.size, c.border, radii.card)
-
-        Fill(l.boxMin, l.boxMax, c.boxFill, radii.inner)
-        Outline(l.boxMin, l.boxMax, c.boxBorder, radii.inner)
-        InsetText(tostring(displayElo), fontBold, l.boxFontSize, l.boxFontSize * 0.7, l.boxMin, l.boxMax, c.boxColor)
-
-        DrawShellText(ac.getDriverName(0), fontBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, c.textColor, ui.Alignment.Start)
-        local chipMax = l.chipMin + l.chipSize
-        Fill(l.chipMin, chipMax, GetEloColor(displayElo), radii.chip)
-        InsetText("ELO", fontSemiBold, c.chipFontSize, c.chipFontSize, l.chipMin, chipMax, c.chipText, layout.as6Panel.chipTextInset)
+    local size = layout.eloCard.size * ShellScale()
+    ui.transparentWindow("eloWindow", scaling.size(layout.eloCard.pos), size, function ()
+        DrawFaded(shown, size, DrawEloCardContent)
     end)
 end
