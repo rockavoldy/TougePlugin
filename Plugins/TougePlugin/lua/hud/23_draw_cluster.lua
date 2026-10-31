@@ -78,14 +78,17 @@ local function DrawRounds()
     local s = ShellScale()
 
     local label = "ROUNDS"
+    local labelColor = r.labelColor
     if currentHudState == HudStates.SuddenDeath then
         label = "SUDDEN DEATH"
     elseif currentHudState == HudStates.Finished then
         -- This needs revisiting for different rulesets, as in the old standings panel.
-        label = standings[3] == RaceResults.Win and "YOU WIN" or "YOU LOSE"
+        local won = standings[3] == RaceResults.Win
+        label = won and "YOU WIN" or "YOU LOSE"
+        labelColor = won and r.win or r.loss
     end
     ui.pushDWriteFont(fontSemiBold)
-    ui.dwriteDrawText(label, scaling.size(r.labelFontSize * layout.shellScale), r.label * s, r.labelColor)
+    ui.dwriteDrawText(label, scaling.size(r.labelFontSize * layout.shellScale), r.label * s, labelColor)
     ui.popDWriteFont()
 
     local pips = currentHudState == HudStates.FirstTwo and 2 or 3

@@ -153,12 +153,18 @@ local layout = {
         maxVisibleRows = 8, -- more course cards scroll with the mouse wheel
         bottomPadding = 12,
 
+        -- Corner radii, shared by every shape so the corners match: the window, cards and
+        -- buttons, boxes inside a card, and chips. Pills are fully round.
+        radius = { window = 10, card = 6, inner = 4, chip = 3 },
+        -- Space between text and the sides of the shape it sits in.
+        textInset = 6,
+        chipTextInset = 3,
+
         -- Frosted backdrop: the scene behind the panel, blurred, under a 50% light layer.
         backdrop = {
             blur = 12,
             tint = rgbm(0.78, 0.85, 0.91, 0.5),
             border = rgbm(1, 1, 1, 0.55),
-            rounding = 10,
         },
 
         title = {
@@ -201,7 +207,6 @@ local layout = {
             step = 94,
             fill = rgbm(0.93, 0.95, 0.97, 0.95),
             border = rgbm(0.72, 0.77, 0.82, 1),
-            rounding = 5,
 
             -- White box on the left with the headline value (Elo, race type) in red.
             boxMin = vec2(8, 8),
@@ -228,7 +233,7 @@ local layout = {
             infoTop = rgbm(0.99, 0.99, 1, 1),
             infoBottom = rgbm(0.85, 0.87, 0.9, 1),
             textLeft = 134, -- moves right by imageShift when a car image is shown
-            textRightInset = 20,
+            textRightInset = 28,
             captionY = vec2(9, 25),
             captionFontSize = 13,
             nameY = vec2(24, 58),
@@ -389,8 +394,8 @@ local layout = {
             pipsRight = 492,
             pipSize = vec2(34, 14),
             pipSpacing = 8,
-            win = rgbm(0.34, 0.45, 0.87, 1),   -- blue, the driver's colour
-            loss = rgbm(1, 0.42, 0.53, 1),     -- pink, the rival's colour
+            win = rgbm(0.3, 0.8, 0.42, 1),     -- green
+            loss = rgbm(1, 0.42, 0.53, 1),     -- pink
             tie = rgbm(0.6, 0.6, 0.6, 0.9),
             pending = rgbm(1, 1, 1, 0.12),
             border = rgbm(0.8, 0.85, 1, 0.6),

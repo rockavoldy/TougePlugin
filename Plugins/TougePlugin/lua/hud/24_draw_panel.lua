@@ -3,9 +3,11 @@
 -- banner for a pending challenge, and a small hint in place of the old tutorial panel.
 -- Drawn in code as a placeholder; coordinates are shell pixels relative to the window.
 
-local function Fill(min, max, color, rounding)
+local radii = layout.as6Panel.radius
+
+local function Fill(min, max, color, rounding, corners)
     local s = ShellScale()
-    ui.drawRectFilled(min * s, max * s, color, (rounding or 0) * s)
+    ui.drawRectFilled(min * s, max * s, color, (rounding or 0) * s, corners or ui.CornerFlags.All)
 end
 
 local function Outline(min, max, color, rounding, thickness)
@@ -13,9 +15,25 @@ local function Outline(min, max, color, rounding, thickness)
     ui.drawRect(min * s, max * s, color, (rounding or 0) * s, ui.CornerFlags.All, (thickness or 1) * s)
 end
 
-local function VerticalGradient(min, max, top, bottom)
+-- Gradient fill with rounded corners: a rounded base in the bottom colour, a rounded cap in
+-- the top colour, and the gradient between the two. topOnly rounds just the top corners.
+local function VerticalGradient(min, max, top, bottom, rounding, topOnly)
     local s = ShellScale()
-    ui.drawRectFilledMultiColor(min * s, max * s, top, top, bottom, bottom)
+    local r = math.min(rounding or 0, (max.y - min.y) / 2)
+    if r <= 0 then
+        ui.drawRectFilledMultiColor(min * s, max * s, top, top, bottom, bottom)
+        return
+    end
+    Fill(min, max, bottom, r, topOnly and ui.CornerFlags.Top or ui.CornerFlags.All)
+    Fill(min, vec2(max.x, min.y + 2 * r), top, r, ui.CornerFlags.Top)
+    local gradientMax = topOnly and max or vec2(max.x, max.y - r)
+    ui.drawRectFilledMultiColor(vec2(min.x, min.y + r) * s, gradientMax * s, top, top, bottom, bottom)
+end
+
+-- Text centered in a shape, kept inset from its sides.
+local function InsetText(text, textFont, fontSize, minFontSize, min, max, color, inset)
+    local pad = vec2(inset or layout.as6Panel.textInset, 0)
+    DrawShellText(text, textFont, fontSize, minFontSize, min + pad, max - pad, color)
 end
 
 -- Wrapped, top-left aligned text in a shell rectangle.
@@ -53,22 +71,22 @@ local function DrawAs6Backdrop(windowPos, size)
         ui.drawImage('dynamic::screen', vec2(0, 0), size, rgbm(1, 1, 1, 1), windowPos / screen, (windowPos + size) / screen)
         ui.endBlurring(b.blur * s)
     end
-    ui.drawRectFilled(vec2(0, 0), size, b.tint, b.rounding * s)
-    ui.drawRect(vec2(0, 0), size, b.border, b.rounding * s)
+    ui.drawRectFilled(vec2(0, 0), size, b.tint, radii.window * s)
+    ui.drawRect(vec2(0, 0), size, b.border, radii.window * s)
 end
 
 -- Gold gradient button; returns true when clicked.
 local function DrawGoldButton(min, max, text, fontSize, enabled, mousePos)
     local b = layout.as6Panel.menu.send
     if not enabled then
-        Fill(min, max, b.disabled, 4)
-        DrawShellText(text, fontBold, fontSize, fontSize, min, max, b.disabledText)
+        Fill(min, max, b.disabled, radii.card)
+        InsetText(text, fontBold, fontSize, fontSize * 0.8, min, max, b.disabledText)
         return false
     end
     local hovered = Hovered(mousePos, min, max)
-    VerticalGradient(min, max, hovered and b.hoverTopColor or b.topColor, b.bottomColor)
-    Outline(min, max, layout.as6Panel.card.hover, 4, 2)
-    DrawShellText(text, fontBold, fontSize, fontSize, min, max, b.text)
+    VerticalGradient(min, max, hovered and b.hoverTopColor or b.topColor, b.bottomColor, radii.card)
+    Outline(min, max, layout.as6Panel.card.hover, radii.card, 2)
+    InsetText(text, fontBold, fontSize, fontSize * 0.8, min, max, b.text)
     return Clicked(mousePos, min, max)
 end
 
@@ -80,7 +98,7 @@ local function DrawPill(min, max, text, fontSize, selected, mousePos)
     if selected then
         Outline(min, max, layout.as6Panel.card.hover, radius, 2)
     end
-    DrawShellText(text, fontSemiBold, fontSize, fontSize, min, max, selected and t.selectedText or t.idleText)
+    InsetText(text, fontSemiBold, fontSize, fontSize * 0.8, min, max, selected and t.selectedText or t.idleText, radius)
     return not selected and Hovered(mousePos, min, max) and Clicked(mousePos, min, max)
 end
 
@@ -92,34 +110,36 @@ local function DrawAs6Card(pos, width, mousePos, content, selected)
     local c = layout.as6Panel.card
     local cardMax = pos + vec2(width, c.size.y)
 
-    Fill(pos, cardMax, c.fill, c.rounding)
-    Outline(pos, cardMax, c.border, c.rounding)
+    Fill(pos, cardMax, c.fill, radii.card)
+    Outline(pos, cardMax, c.border, radii.card)
 
     -- Left: headline box and chips
-    Fill(pos + c.boxMin, pos + c.boxMax, c.boxFill, 3)
-    Outline(pos + c.boxMin, pos + c.boxMax, c.boxBorder, 3)
-    DrawShellText(content.boxText, fontBold, c.boxFontSize, c.boxFontSize * 0.7,
+    Fill(pos + c.boxMin, pos + c.boxMax, c.boxFill, radii.inner)
+    Outline(pos + c.boxMin, pos + c.boxMax, c.boxBorder, radii.inner)
+    InsetText(content.boxText, fontBold, c.boxFontSize, c.boxFontSize * 0.7,
         pos + c.boxMin, pos + c.boxMax, content.busy and c.busyColor or c.boxColor)
 
     for i, chip in ipairs(content.chips) do
         local chipMin = pos + vec2(c.boxMin.x + (i - 1) * (c.chipWidth + c.chipGap), c.chipY)
         local chipMax = chipMin + vec2(c.chipWidth, c.chipHeight)
-        Fill(chipMin, chipMax, chip.fill or c.chipFill, 3)
-        DrawShellText(chip.text, fontSemiBold, c.chipFontSize, c.chipFontSize * 0.8, chipMin, chipMax, c.chipText)
+        Fill(chipMin, chipMax, chip.fill or c.chipFill, radii.chip)
+        InsetText(chip.text, fontSemiBold, c.chipFontSize, c.chipFontSize * 0.7, chipMin, chipMax, c.chipText,
+            layout.as6Panel.chipTextInset)
     end
 
     -- Right: silver info area with caption, name and detail
     local infoMax = pos + vec2(width - c.rightInset, c.infoMax.y)
-    VerticalGradient(pos + c.infoMin, infoMax, c.infoTop, c.infoBottom)
-    Outline(pos + c.infoMin, infoMax, c.border)
+    VerticalGradient(pos + c.infoMin, infoMax, c.infoTop, c.infoBottom, radii.inner)
+    Outline(pos + c.infoMin, infoMax, c.border, radii.inner)
 
     local textLeft = c.textLeft
     if content.image ~= nil then
         local sc = ShellScale()
         local imageMin = pos + c.image
         local imageMax = imageMin + c.imageSize
-        ui.drawImage(content.image, imageMin * sc, imageMax * sc, rgbm(1, 1, 1, content.busy and 0.5 or 1), c.imageUvMin, c.imageUvMax)
-        Outline(imageMin, imageMax, c.imageBorder)
+        ui.drawImageRounded(content.image, imageMin * sc, imageMax * sc, rgbm(1, 1, 1, content.busy and 0.5 or 1),
+            c.imageUvMin, c.imageUvMax, radii.chip * sc)
+        Outline(imageMin, imageMax, c.imageBorder, radii.chip)
         textLeft = textLeft + c.imageShift
     end
     local function Line(span)
@@ -135,10 +155,10 @@ local function DrawAs6Card(pos, width, mousePos, content, selected)
 
     local hovered = mousePos ~= nil and Hovered(mousePos, pos, cardMax)
     if selected then
-        Outline(pos, cardMax, c.hoverGlow, c.rounding + 2, c.hoverGlowThickness)
-        Outline(pos, cardMax, c.hover, c.rounding, c.hoverThickness)
+        Outline(pos, cardMax, c.hoverGlow, radii.card + 3, c.hoverGlowThickness)
+        Outline(pos, cardMax, c.hover, radii.card, c.hoverThickness)
     elseif hovered then
-        Outline(pos, cardMax, c.hover, c.rounding, 1.5)
+        Outline(pos, cardMax, c.hover, radii.card, 1.5)
     end
     return hovered and Clicked(mousePos, pos, cardMax)
 end
@@ -168,8 +188,8 @@ local function DrawMenuHeader(subtitle, mousePos)
     local p = layout.as6Panel
     local m = p.menu
     local t = p.title
-    VerticalGradient(vec2(0, 0), vec2(m.width, t.max.y), t.top, t.bottom)
-    Fill(vec2(0, 0), vec2(m.width, 2), t.highlight)
+    VerticalGradient(vec2(0, 0), vec2(m.width, t.max.y), t.top, t.bottom, radii.window, true)
+    Fill(vec2(radii.window, 0), vec2(m.width - radii.window, 2), t.highlight)
     DrawShellText("TOUGE", fontBold, t.fontSize, t.fontSize, m.titleText, vec2(400, t.max.y), t.color, ui.Alignment.Start)
 
     local tb = m.tabs
@@ -185,7 +205,7 @@ local function DrawMenuHeader(subtitle, mousePos)
     local radius = (m.subtitleMax.y - m.subtitleMin.y) / 2
     Fill(m.subtitleMin, m.subtitleMax, st.fill, radius)
     Outline(m.subtitleMin, m.subtitleMax, st.border, radius)
-    DrawShellText(subtitle, font, st.fontSize, st.fontSize, m.subtitleMin, m.subtitleMax, st.color)
+    InsetText(subtitle, font, st.fontSize, st.fontSize * 0.8, m.subtitleMin, m.subtitleMax, st.color, radius)
 end
 
 -- Pending challenge with an accept button, the same as pressing M.
@@ -195,8 +215,8 @@ local function DrawInviteBanner(mousePos)
     local c = layout.as6Panel.card
     local min = vec2(b.margin, b.y)
     local max = vec2(m.width - b.margin, b.y + b.height)
-    Fill(min, max, c.fill, c.rounding)
-    Outline(min, max, c.hover, c.rounding, 2)
+    Fill(min, max, c.fill, radii.card)
+    Outline(min, max, c.hover, radii.card, 2)
 
     local text = inviteSenderName .. " (" .. inviteSenderElo .. ") challenged you"
     if inviteCourseName ~= "" then
@@ -277,16 +297,17 @@ local function DrawChallengeTab(top, height, mousePos)
         local min = vec2(x, coursesTop + (row - 1) * cc.step)
         local max = min + vec2(width, cc.height)
         local selected = index == selectedCourseIndex
-        Fill(min, max, card.fill, card.rounding)
-        Outline(min, max, selected and card.hover or card.border, card.rounding, selected and card.hoverThickness or 1)
+        Fill(min, max, card.fill, radii.card)
+        Outline(min, max, selected and card.hover or card.border, radii.card, selected and card.hoverThickness or 1)
         local chipMin = min + vec2(10, (cc.height - card.chipHeight) / 2)
         local chipMax = chipMin + vec2(cc.chipWidth, card.chipHeight)
-        Fill(chipMin, chipMax, card.chipFill, 3)
-        DrawShellText("No. " .. index, fontSemiBold, card.chipFontSize, card.chipFontSize, chipMin, chipMax, card.chipText)
-        DrawShellText(courseNames[index], fontBold, cc.fontSize, cc.minFontSize, vec2(chipMax.x + 12, min.y), max - vec2(12, 0),
+        Fill(chipMin, chipMax, card.chipFill, radii.chip)
+        InsetText("No. " .. index, fontSemiBold, card.chipFontSize, card.chipFontSize * 0.7, chipMin, chipMax, card.chipText,
+            layout.as6Panel.chipTextInset)
+        DrawShellText(courseNames[index], fontBold, cc.fontSize, cc.minFontSize, vec2(chipMax.x + 12, min.y), max - vec2(16, 0),
             card.textColor, ui.Alignment.Start)
         if not selected and Hovered(mousePos, min, max) then
-            Outline(min, max, card.hover, card.rounding, 1.5)
+            Outline(min, max, card.hover, radii.card, 1.5)
             if Clicked(mousePos, min, max) then
                 selectedCourseIndex = index
             end
@@ -341,8 +362,8 @@ local function DrawProfileTab(top)
         local y = top + card.size.y + pr.gap + (i - 1) * pr.statStep
         local min = vec2(left, y)
         local max = vec2(left + pr.cardWidth, y + pr.statHeight)
-        Fill(min, max, card.fill, card.rounding)
-        Outline(min, max, card.border, card.rounding)
+        Fill(min, max, card.fill, radii.card)
+        Outline(min, max, card.border, radii.card)
         DrawShellText(stat[1], fontSemiBold, pr.statFontSize, pr.statFontSize, min + vec2(16, 0), max, card.mutedColor, ui.Alignment.Start)
         DrawShellText(stat[2], fontBold, pr.statFontSize, pr.statFontSize, min, max - vec2(16, 0), card.textColor, ui.Alignment.End)
     end
@@ -367,8 +388,8 @@ local function DrawHowToTab(top)
         .. "Beat your opponent to gain Elo. How much you gain depends on both drivers' Elo and cars."
     local boxMin = vec2(left, top)
     local boxMax = vec2(right, top + h.bodyHeight)
-    Fill(boxMin, boxMax, card.fill, card.rounding)
-    Outline(boxMin, boxMax, card.border, card.rounding)
+    Fill(boxMin, boxMax, card.fill, radii.card)
+    Outline(boxMin, boxMax, card.border, radii.card)
     local inset = vec2(h.bodyPadding, h.bodyPadding)
     DrawParagraph(body, font, h.bodyFontSize, boxMin + inset, boxMax - inset, card.textColor)
 
@@ -379,8 +400,8 @@ local function DrawHowToTab(top)
         local row = math.floor((i - 1) / h.keyColumns)
         local keyMin = vec2(left + column * columnWidth, keysTop + row * h.keyRowStep)
         local keyMax = keyMin + h.keySize
-        Fill(keyMin, keyMax, rgbm(1, 1, 1, 1), 6)
-        Outline(keyMin, keyMax, card.border, 6, 2)
+        Fill(keyMin, keyMax, rgbm(1, 1, 1, 1), radii.card)
+        Outline(keyMin, keyMax, card.border, radii.card, 2)
         DrawShellText(binding.key, fontBold, h.keyFontSize, h.keyFontSize, keyMin, keyMax, card.textColor)
         DrawShellText(binding.text, fontSemiBold, h.keyLabelFontSize, h.keyLabelFontSize * 0.8,
             vec2(keyMax.x + 14, keyMin.y), vec2(keyMin.x + columnWidth - m.padding, keyMax.y), card.textColor, ui.Alignment.Start)
@@ -454,7 +475,7 @@ local function DrawMenuHint()
         local radius = hint.size.y / 2
         Fill(vec2(0, 0), hint.size, st.fill, radius)
         Outline(vec2(0, 0), hint.size, st.border, radius)
-        DrawShellText("I  Touge menu   ·   H  hide", fontSemiBold, hint.fontSize, hint.fontSize, vec2(0, 0), hint.size, st.color)
+        InsetText("I  Touge menu   ·   H  hide", fontSemiBold, hint.fontSize, hint.fontSize * 0.8, vec2(0, 0), hint.size, st.color, radius)
     end)
 end
 
@@ -468,16 +489,16 @@ local function DrawEloCard()
     local c = layout.as6Panel.card
     ui.transparentWindow("eloWindow", scaling.size(l.pos), l.size * ShellScale(), function ()
         local displayElo = math.floor(math.max(elo, 0) + 0.5)
-        VerticalGradient(vec2(0, 0), l.size, c.infoTop, c.infoBottom)
-        Outline(vec2(0, 0), l.size, c.border, c.rounding)
+        VerticalGradient(vec2(0, 0), l.size, c.infoTop, c.infoBottom, radii.card)
+        Outline(vec2(0, 0), l.size, c.border, radii.card)
 
-        Fill(l.boxMin, l.boxMax, c.boxFill, 3)
-        Outline(l.boxMin, l.boxMax, c.boxBorder, 3)
-        DrawShellText(tostring(displayElo), fontBold, l.boxFontSize, l.boxFontSize * 0.7, l.boxMin, l.boxMax, c.boxColor)
+        Fill(l.boxMin, l.boxMax, c.boxFill, radii.inner)
+        Outline(l.boxMin, l.boxMax, c.boxBorder, radii.inner)
+        InsetText(tostring(displayElo), fontBold, l.boxFontSize, l.boxFontSize * 0.7, l.boxMin, l.boxMax, c.boxColor)
 
         DrawShellText(ac.getDriverName(0), fontBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, c.textColor, ui.Alignment.Start)
         local chipMax = l.chipMin + l.chipSize
-        Fill(l.chipMin, chipMax, GetEloColor(displayElo), 3)
-        DrawShellText("ELO", fontSemiBold, c.chipFontSize, c.chipFontSize, l.chipMin, chipMax, c.chipText)
+        Fill(l.chipMin, chipMax, GetEloColor(displayElo), radii.chip)
+        InsetText("ELO", fontSemiBold, c.chipFontSize, c.chipFontSize, l.chipMin, chipMax, c.chipText, layout.as6Panel.chipTextInset)
     end)
 end
