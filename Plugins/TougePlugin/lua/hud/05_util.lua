@@ -87,23 +87,38 @@ local function FindCarBySessionId(sessionId)
 end
 
 -- Path of the skin preview of the car with the given session ID, or nil when that car or
--- its preview is missing. Results are cached per car and skin.
+-- every preview of it is missing. A missing or unknown skin falls back to the first skin
+-- with a preview. Results are cached per car and skin.
 local carPreviewCache = {}
 local function GetCarPreviewPath(sessionId)
     local c = FindCarBySessionId(sessionId)
     if c == nil then
         return nil
     end
-    local carId, skinId = ac.getCarID(c.index), ac.getCarSkinID(c.index)
-    if carId == nil or skinId == nil then
+    local carId, skinId = ac.getCarID(c.index), ac.getCarSkinID(c.index) or ""
+    if carId == nil then
         return nil
     end
     local key = carId .. "/" .. skinId
     if carPreviewCache[key] == nil then
-        local path = ac.getFolder(ac.FolderID.ContentCars) .. "/" .. carId .. "/skins/" .. skinId .. "/preview.jpg"
-        carPreviewCache[key] = io.fileExists(path) and path or false
+        local skinsDir = ac.getFolder(ac.FolderID.ContentCars) .. "/" .. carId .. "/skins/"
+        local path = skinsDir .. skinId .. "/preview.jpg"
+        if skinId == "" or not io.fileExists(path) then
+            path = io.scanDir(skinsDir, "*", function (fileName)
+                local candidate = skinsDir .. fileName .. "/preview.jpg"
+                return io.fileExists(candidate) and candidate or nil
+            end)
+        end
+        carPreviewCache[key] = path or false
+        ac.log("Touge car preview for " .. key .. ": " .. tostring(path))
     end
     return carPreviewCache[key] or nil
+end
+
+-- Name of the car with the given session ID, or nil when there is no such car.
+local function GetCarNameBySessionId(sessionId)
+    local c = FindCarBySessionId(sessionId)
+    return c ~= nil and ac.getCarName(c.index) or nil
 end
 
 local function checkTimeout(activatedAt, duration)

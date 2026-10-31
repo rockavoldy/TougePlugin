@@ -142,9 +142,9 @@ local layout = {
         chipSize = vec2(64, 15),
     },
 
-    -- Invite menu and course select in the style of the Initial D Arcade Stage 6 menus:
-    -- a silver title bar, a subtitle pill and white cards with a gold frame on hover,
-    -- anchored top-right. Placeholder drawn in code until real shells exist; every size and
+    -- Menus in the style of the Initial D Arcade Stage 6 menus, in a dark theme that sits
+    -- with the race HUD: a steel title bar, a subtitle pill and dark cards with a gold frame
+    -- on hover. Placeholder drawn in code until real shells exist; every size and
     -- colour is here so images can replace the shapes later.
     as6Panel = {
         marginRight = 50, -- reference pixels
@@ -160,30 +160,30 @@ local layout = {
         textInset = 6,
         chipTextInset = 3,
 
-        -- Frosted backdrop: the scene behind the panel, blurred, under a 50% light layer.
+        -- Frosted backdrop: the scene behind the panel, blurred, under a dark layer.
         backdrop = {
             blur = 12,
-            tint = rgbm(0.78, 0.85, 0.91, 0.5),
-            border = rgbm(1, 1, 1, 0.55),
+            tint = rgbm(0.04, 0.06, 0.1, 0.62),
+            border = rgbm(0.45, 0.55, 0.7, 0.5),
         },
 
         title = {
             min = vec2(0, 0),
             max = vec2(520, 50),
-            top = rgbm(0.95, 0.96, 0.97, 0.97), -- brushed silver gradient
-            bottom = rgbm(0.64, 0.67, 0.71, 0.97),
-            highlight = rgbm(1, 1, 1, 0.9),
+            top = rgbm(0.2, 0.24, 0.31, 0.97), -- dark steel gradient
+            bottom = rgbm(0.1, 0.12, 0.17, 0.97),
+            highlight = rgbm(0.55, 0.65, 0.8, 0.6),
             fontSize = 26,
-            color = rgbm(0.2, 0.22, 0.25, 1),
+            color = rgbm(0.93, 0.95, 0.98, 1),
         },
 
         subtitle = {
             min = vec2(40, 58),
             max = vec2(480, 82),
-            fill = rgbm(0.86, 0.9, 0.94, 0.92),
-            border = rgbm(1, 1, 1, 0.85),
+            fill = rgbm(0.1, 0.13, 0.18, 0.9),
+            border = rgbm(0.35, 0.42, 0.52, 0.8),
             fontSize = 14,
-            color = rgbm(0.25, 0.28, 0.32, 1),
+            color = rgbm(0.75, 0.8, 0.86, 1),
         },
 
         -- Course / Outrun pills under the subtitle.
@@ -192,10 +192,10 @@ local layout = {
             size = vec2(140, 28),
             gap = 12,
             fontSize = 15,
-            idleFill = rgbm(0.6, 0.64, 0.69, 0.92),
-            idleText = rgbm(1, 1, 1, 1),
-            selectedFill = rgbm(0.97, 0.97, 0.98, 1),
-            selectedText = rgbm(0.2, 0.22, 0.25, 1),
+            idleFill = rgbm(0.2, 0.24, 0.3, 0.92),
+            idleText = rgbm(0.75, 0.8, 0.86, 1),
+            selectedFill = rgbm(0.26, 0.46, 0.86, 1), -- the race HUD's driver blue
+            selectedText = rgbm(1, 1, 1, 1),
         },
 
         listTop = 92,
@@ -203,54 +203,57 @@ local layout = {
 
         card = {
             x = 12,
-            size = vec2(496, 86),
-            step = 94,
-            fill = rgbm(0.93, 0.95, 0.97, 0.95),
-            border = rgbm(0.72, 0.77, 0.82, 1),
+            size = vec2(496, 92),
+            step = 100,
+            fill = rgbm(0.11, 0.13, 0.17, 0.94),
+            border = rgbm(0.28, 0.33, 0.41, 1),
 
-            -- White box on the left with the headline value (Elo, race type) in red.
+            -- Dark box on the left with the headline value (Elo, race type) in red.
             boxMin = vec2(8, 8),
-            boxMax = vec2(116, 56),
-            boxFill = rgbm(1, 1, 1, 1),
-            boxBorder = rgbm(0.7, 0.74, 0.78, 1),
+            boxMax = vec2(116, 60),
+            boxFill = rgbm(0.05, 0.06, 0.08, 1),
+            boxBorder = rgbm(0.3, 0.35, 0.43, 1),
             boxFontSize = 26,
-            boxColor = rgbm(0.78, 0.08, 0.12, 1),
+            boxColor = rgbm(1, 0.32, 0.32, 1),
 
-            -- Grey tag chips under the box.
-            chipY = 61,
-            chipHeight = 17,
+            -- Tag chips under the box. Status chips stand out: blue when ready, red in a race.
+            chipY = 66,
+            chipHeight = 18,
             chipWidth = 52,
             chipGap = 4,
             chipFontSize = 11,
-            chipFill = rgbm(0.6, 0.64, 0.69, 1),
+            chipFill = rgbm(0.32, 0.36, 0.43, 1),
             chipText = rgbm(1, 1, 1, 1),
+            readyFill = rgbm(0.2, 0.55, 0.95, 1),
+            inRaceFill = rgbm(0.92, 0.32, 0.25, 1),
 
-            -- Silver info area on the right: car image, caption, big name, detail line. The
+            -- Info area on the right: car image, car name, big driver name, detail line. The
             -- info area and the text end rightInset / textRightInset before the card's edge.
             infoMin = vec2(122, 8),
-            infoMax = vec2(488, 78),
+            infoMax = vec2(488, 84),
             rightInset = 8,
-            infoTop = rgbm(0.99, 0.99, 1, 1),
-            infoBottom = rgbm(0.85, 0.87, 0.9, 1),
+            infoTop = rgbm(0.17, 0.2, 0.26, 1),
+            infoBottom = rgbm(0.09, 0.11, 0.15, 1),
             textLeft = 134, -- moves right by imageShift when a car image is shown
             textRightInset = 28,
-            captionY = vec2(9, 25),
-            captionFontSize = 13,
-            nameY = vec2(24, 58),
+            captionY = vec2(14, 31),
+            captionFontSize = 14,
+            nameY = vec2(30, 62),
             nameFontSize = 28,
             nameMinFontSize = 20,
-            detailY = vec2(57, 76),
+            detailY = vec2(61, 80),
             detailFontSize = 14,
-            textColor = rgbm(0.13, 0.14, 0.16, 1),
-            mutedColor = rgbm(0.36, 0.39, 0.43, 1),
-            busyColor = rgbm(0.55, 0.57, 0.6, 1),
+            textColor = rgbm(0.95, 0.96, 0.98, 1),
+            mutedColor = rgbm(0.62, 0.67, 0.74, 1),
+            busyColor = rgbm(0.45, 0.48, 0.53, 1),
+            keyFill = rgbm(0.05, 0.06, 0.08, 1), -- key caps on the How to play tab
             -- Car skin preview, 16:9, cropped to the middle of the picture where the car is.
-            image = vec2(128, 20),
+            image = vec2(128, 24),
             imageSize = vec2(80, 45),
             imageShift = 82,
             imageUvMin = vec2(0.14, 0.14),
             imageUvMax = vec2(0.86, 0.86),
-            imageBorder = rgbm(0.72, 0.77, 0.82, 1),
+            imageBorder = rgbm(0.28, 0.33, 0.41, 1),
 
             -- Gold frame around the card under the mouse.
             hover = rgbm(0.93, 0.76, 0.3, 1),
@@ -267,7 +270,7 @@ local layout = {
             width = 980,
             padding = 24,
             titleText = vec2(24, 0), -- "TOUGE", left-aligned in the title bar
-            tabs = { right = 956, y = 11, size = vec2(140, 28), gap = 8, fontSize = 14 },
+            tabs = { right = 956, y = 11, size = vec2(152, 28), gap = 8, fontSize = 14 },
             subtitleMin = vec2(24, 62),
             subtitleMax = vec2(956, 86),
 
@@ -283,7 +286,7 @@ local layout = {
             contentTop = 100,
             captionHeight = 26,
             captionFontSize = 13,
-            captionColor = rgbm(0.25, 0.28, 0.32, 1),
+            captionColor = rgbm(0.7, 0.76, 0.84, 1),
             leftX = 24,
             leftWidth = 456,
             rightX = 504,
@@ -306,9 +309,9 @@ local layout = {
                 topColor = rgbm(1, 0.9, 0.55, 1), -- gold gradient
                 bottomColor = rgbm(0.86, 0.64, 0.18, 1),
                 hoverTopColor = rgbm(1, 0.95, 0.7, 1),
-                disabled = rgbm(0.7, 0.73, 0.77, 0.9),
+                disabled = rgbm(0.25, 0.28, 0.33, 0.9),
                 text = rgbm(0.2, 0.15, 0.05, 1),
-                disabledText = rgbm(0.95, 0.96, 0.97, 1),
+                disabledText = rgbm(0.6, 0.64, 0.7, 1),
             },
 
             profile = {

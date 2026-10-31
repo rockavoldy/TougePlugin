@@ -245,13 +245,14 @@ local function DrawChallengeTab(top, height, mousePos)
     for index = 1, playerCount do
         local player = nearbyPlayers[index]
         local pos = vec2(m.leftX, listTop + (index - 1) * card.step)
+        local status = player.inRace and { text = "IN RACE", fill = card.inRaceFill } or { text = "READY", fill = card.readyFill }
         local clicked = DrawAs6Card(pos, m.leftWidth, mousePos, {
             boxText = tostring(player.elo),
             chips = {
                 { text = "ELO", fill = GetEloColor(player.elo) },
-                { text = player.inRace and "IN RACE" or "READY" },
+                status,
             },
-            caption = "DRIVER",
+            caption = GetCarNameBySessionId(player.sessionId) or "DRIVER",
             name = player.name,
             detail = player.inRace and "Currently in a race" or "Click to select",
             busy = player.inRace,
@@ -348,9 +349,9 @@ local function DrawProfileTab(top)
     DrawAs6Card(vec2(left, top), pr.cardWidth, nil, {
         boxText = tostring(displayElo),
         chips = { { text = "ELO", fill = GetEloColor(displayElo) } },
-        caption = "DRIVER",
+        caption = ac.getCarName(0) or "DRIVER",
         name = ac.getDriverName(0),
-        detail = ac.getCarName(0) or "Your touge profile",
+        detail = "Your touge profile",
         image = car ~= nil and GetCarPreviewPath(car.sessionID) or nil,
     }, false)
 
@@ -400,7 +401,7 @@ local function DrawHowToTab(top)
         local row = math.floor((i - 1) / h.keyColumns)
         local keyMin = vec2(left + column * columnWidth, keysTop + row * h.keyRowStep)
         local keyMax = keyMin + h.keySize
-        Fill(keyMin, keyMax, rgbm(1, 1, 1, 1), radii.card)
+        Fill(keyMin, keyMax, card.keyFill, radii.card)
         Outline(keyMin, keyMax, card.border, radii.card, 2)
         DrawShellText(binding.key, fontBold, h.keyFontSize, h.keyFontSize, keyMin, keyMax, card.textColor)
         DrawShellText(binding.text, fontSemiBold, h.keyLabelFontSize, h.keyLabelFontSize * 0.8,
