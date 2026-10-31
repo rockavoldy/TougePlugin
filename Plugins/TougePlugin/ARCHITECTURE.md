@@ -82,7 +82,8 @@ the Lua scripts under `lua/` are the reference client implementation of that con
    - `extra_cfg.yml` has `MinimumCSPVersion >= 1937`
 2. **Provide Lua scripts** — reads and registers `teleport.lua`, `hud.lua`, `timing.lua`
    with the server's `CSPServerScriptProvider`, so they are pushed to every
-   client automatically.
+   client automatically. A script can be split into parts in a folder named after it
+   (`lua/hud/` for `hud.lua`); the parts listed in its `parts.txt` are joined in that order into one script.
 3. **Database setup** —
    - `IsDbLocalMode == true` → `SqliteConnectionFactory("plugins/TougePlugin/database.db")`
    - otherwise → `PostgresConnectionFactory(PostgresqlConnectionString)`
@@ -194,7 +195,7 @@ only if **exactly one** of course/outrun is enabled is the type forced; otherwis
 2. Resolves the configured ruleset, the selected course, and the race type.
 3. Creates a new `TougeSession` through the factory and assigns its reference to **both**
    cars' `CurrentSession` (the session object is shared).
-4. Sends `AS_Invite` to the recipient (their `hud.lua` shows the incoming-invite card).
+4. Sends `AS_Invite` to the recipient (their `hud.lua` shows the incoming-challenge popup).
 5. Starts a 10-second timeout: if the session is still inactive afterwards, it clears
    `CurrentSession` on both cars and notifies the sender that the invite expired.
 
@@ -424,7 +425,7 @@ All packets are `OnlineEvent` messages. Direction legend:
 
 | Script | Key responsibilities |
 |--------|----------------------|
-| `hud.lua` | Full HUD: Elo display/animation, invite menu (nearby list, course select, race-type toggle), incoming invites, standings, countdown/notifications, forfeit. Keybindings: `N` invite nearby, `I` invite menu, `M` accept, `H` hide tutorial, `F` hold-to-forfeit. Loads fonts/assets from `/static/TougePlugin/`. |
+| `hud.lua` | Full HUD in an Initial D Arcade Stage 6 style with a dark theme: Elo card, the Touge menu (CHALLENGE tab with nearby drivers, their cars, course and race type; PROFILE; HOW TO PLAY), incoming challenge, notification and forfeit popups, countdown, and the in-race cluster (time advantage, race positions, round results). Keybindings: `I` menu, `N` challenge the nearest driver, `M` accept, `H` hide the menu hint, `F` hold to forfeit. Loads fonts, art and UI sounds (`sounds.zip`, one WAV per slot in `soundSlots`) from `/static/TougePlugin/`. Split into parts under `lua/hud/`: config, scaling, state, asset manifest, layout tables, utilities, shell and tween helpers, event handlers, race tracking, draw code, input, and a debug mock panel (enabled with `debugHud` in `00_config.lua`). |
 | `teleport.lua` | Handles `AS_Teleport`: raycasts down to ground level, briefly disables collisions, locks controls 10 s, then `physics.setCarPosition`. Also implements `AS_LockControls`. |
 | `timing.lua` | Tracks `AS_FinishLine` points; on `AS_Finish { lookForFinish }` enables finish watching; per-frame segment-intersection test against the 2D line, sends `AS_Finish` up once crossed; reads `UseTrackFinish` from `AS_Initialization`. |
 

@@ -48,4 +48,58 @@ public class TougeCommandModule : ACModuleBase
         // Send elo packet
         Client!.SendPacket(new EloPacket { Elo = elo });
     }
+
+    // Debug commands for testing the HUD without an opponent. They only send packets to the
+    // caller and do not change any session.
+
+    // state: 0 Off, 1 FirstTwo, 2 SuddenDeath, 3 Finished, 4 CatAndMouse, 5 NoUpdate.
+    // results: up to three of W, L, T or - (to be decided), for example "WL-".
+    // rivalSessionId defaults to the caller's own car.
+    [Command("tougedebug_state"), RequireAdmin, RequireConnectedPlayer]
+    public void DebugSessionState(int state, string results = "---", int rivalSessionId = -1)
+    {
+        int[] standings = [0, 0, 0];
+        for (int i = 0; i < Math.Min(3, results.Length); i++)
+        {
+            standings[i] = char.ToUpperInvariant(results[i]) switch
+            {
+                'W' => 1,
+                'L' => 2,
+                'T' => 3,
+                _ => 0,
+            };
+        }
+
+        if (rivalSessionId < 0)
+            rivalSessionId = Client!.SessionId;
+
+        Client!.SendPacket(new SessionStatePacket
+        {
+            Result1 = standings[0],
+            Result2 = standings[1],
+            Result3 = standings[2],
+            SessionState = state,
+            RivalSessionId = state == 0 ? -1 : rivalSessionId,
+        });
+        Reply($"Sent session state {state}, results {results}, rival {rivalSessionId}.");
+    }
+
+    [Command("tougedebug_notify"), RequireAdmin, RequireConnectedPlayer]
+    public void DebugNotification([Remainder] string message)
+    {
+        Touge.SendNotification(Client, message);
+    }
+
+    [Command("tougedebug_countdown"), RequireAdmin, RequireConnectedPlayer]
+    public async Task DebugCountdownAsync()
+    {
+        foreach (string step in new[] { "Ready...", "Set...", "Go!" })
+        {
+            // The admin may have left during the delay.
+            if (Client is not { IsConnected: true })
+                return;
+            Touge.SendNotification(Client, step, true);
+            await Task.Delay(1000);
+        }
+    }
 }

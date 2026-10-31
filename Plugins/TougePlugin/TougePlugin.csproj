@@ -6,13 +6,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="lua\hud.lua">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="lua\teleport.lua">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="lua\timing.lua">
+        <!-- Includes the parts of split scripts, such as lua\hud\*.lua. -->
+        <None Update="lua\**\*.lua;lua\**\parts.txt">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>

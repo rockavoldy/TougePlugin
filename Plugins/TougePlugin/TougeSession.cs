@@ -277,7 +277,8 @@ public class TougeSession
         Log.Debug("[TougeSession] SendSessionState state={HudState}. ChallengerClient={ChallengerConnected} ChallengedClient={ChallengedConnected}",
             hudState, Challenger.Client != null, Challenged.Client != null);
 
-        Challenger.Client?.SendPacket(new SessionStatePacket { Result1 = challengerStandings[0], Result2 = challengerStandings[1], Result3 = challengerStandings[2], SessionState = (int)hudState });
-        Challenged.Client?.SendPacket(new SessionStatePacket { Result1 = challengedStandings[0], Result2 = challengedStandings[1], Result3 = challengedStandings[2], SessionState = (int)hudState });
+        bool hasRival = hudState != SessionState.Off;
+        Challenger.Client?.SendPacket(new SessionStatePacket { Result1 = challengerStandings[0], Result2 = challengerStandings[1], Result3 = challengerStandings[2], SessionState = (int)hudState, RivalSessionId = hasRival ? Challenged.SessionId : -1 });
+        Challenged.Client?.SendPacket(new SessionStatePacket { Result1 = challengedStandings[0], Result2 = challengedStandings[1], Result3 = challengedStandings[2], SessionState = (int)hudState, RivalSessionId = hasRival ? Challenger.SessionId : -1 });
     }
 }
