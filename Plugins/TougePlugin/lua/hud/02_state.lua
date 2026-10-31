@@ -46,6 +46,13 @@ local notificationActivatedAt = nil
 local countdownHudMessage = ""
 local isCountdownHudActive = false
 local countdownActivatedAt = nil
+-- Player settings, saved by CSP between sessions (Documents\Assetto Corsa\cfg\extension\state\lua).
+local settings = ac.storage({
+    soundEnabled = true,
+    soundVolume = 0.8, -- master volume, 0 to 1, applied on top of each slot's volume
+}, "touge_")
+local isDraggingVolume = false
+
 local soundPaths = {} -- slot name to the local file, filled as the sound zips load
 local soundEvents = {} -- slot name to the ac.AudioEvent playing it
 

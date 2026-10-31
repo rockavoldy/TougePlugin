@@ -185,6 +185,7 @@ end
 local tabs = {
     { id = "challenge", text = "CHALLENGE" },
     { id = "profile", text = "PROFILE" },
+    { id = "settings", text = "SETTINGS" },
     { id = "howto", text = "HOW TO PLAY" },
 }
 
@@ -376,6 +377,83 @@ local function DrawProfileTab(top)
     end
 end
 
+-- One row of the SETTINGS tab: card background and label. Returns the row's corners.
+local function DrawSettingsRow(index, top, label)
+    local m = layout.as6Panel.menu
+    local st = m.settings
+    local card = layout.as6Panel.card
+    local left = (m.width - st.rowWidth) / 2
+    local min = vec2(left, top + (index - 1) * st.rowStep)
+    local max = min + vec2(st.rowWidth, st.rowHeight)
+    Fill(min, max, card.fill, radii.card)
+    Outline(min, max, card.border, radii.card)
+    DrawShellText(label, fontSemiBold, st.labelFontSize, st.labelFontSize, min + vec2(st.labelX, 0),
+        vec2(min.x + st.controlX, max.y), card.mutedColor, ui.Alignment.Start)
+    return min, max
+end
+
+local function DrawSettingsTab(top, mousePos)
+    local m = layout.as6Panel.menu
+    local st = m.settings
+    local card = layout.as6Panel.card
+    local s = ShellScale()
+
+    -- Sound on / off
+    local min, max = DrawSettingsRow(1, top, "Sound")
+    local pillMin = vec2(min.x + st.controlX, min.y + (st.rowHeight - st.pillSize.y) / 2)
+    if DrawPill(pillMin, pillMin + st.pillSize, "ON", layout.as6Panel.toggle.fontSize, settings.soundEnabled, mousePos) then
+        settings.soundEnabled = true
+        PlaySound("pick")
+    end
+    local offMin = pillMin + vec2(st.pillSize.x + st.pillGap, 0)
+    if DrawPill(offMin, offMin + st.pillSize, "OFF", layout.as6Panel.toggle.fontSize, not settings.soundEnabled, mousePos) then
+        settings.soundEnabled = false
+    end
+
+    -- Volume slider: drag along the track or use the mouse wheel over the row. A preview
+    -- plays when the drag ends.
+    min, max = DrawSettingsRow(2, top, "Volume")
+    local trackMin = vec2(min.x + st.controlX, min.y + (st.rowHeight - st.trackHeight) / 2)
+    local trackMax = vec2(max.x - st.labelX - st.valueWidth, trackMin.y + st.trackHeight)
+    local width = trackMax.x - trackMin.x
+    local hitMin = vec2(trackMin.x - st.knobRadius, min.y)
+    local hitMax = vec2(trackMax.x + st.knobRadius, max.y)
+
+    if Hovered(mousePos, hitMin, hitMax) and Clicked(mousePos, hitMin, hitMax) then
+        isDraggingVolume = true
+    end
+    if isDraggingVolume then
+        if ui.mouseDown() then
+            settings.soundVolume = math.max(0, math.min(1, (mousePos.x / s - trackMin.x) / width))
+        else
+            isDraggingVolume = false
+            PlaySound("pick")
+        end
+    elseif IsInRect(mousePos, min * s, max * s) and ui.mouseWheel() ~= 0 then
+        settings.soundVolume = math.max(0, math.min(1, settings.soundVolume + ui.mouseWheel() * st.wheelStep))
+        PlaySound("pick")
+    end
+
+    local volume = settings.soundVolume
+    local active = settings.soundEnabled
+    local send = m.send
+    Fill(trackMin, trackMax, card.boxFill, st.trackHeight / 2)
+    if volume > 0 then
+        local fillMax = vec2(trackMin.x + math.max(st.trackHeight, width * volume), trackMax.y)
+        if active then
+            VerticalGradient(trackMin, fillMax, send.topColor, send.bottomColor, st.trackHeight / 2)
+        else
+            Fill(trackMin, fillMax, card.busyColor, st.trackHeight / 2)
+        end
+    end
+    local knob = vec2(trackMin.x + width * volume, (trackMin.y + trackMax.y) / 2) * s
+    ui.drawCircleFilled(knob, st.knobRadius * s, active and card.textColor or card.busyColor, 24)
+    ui.drawCircle(knob, st.knobRadius * s, card.hover, 24, (isDraggingVolume and 2 or 1) * s)
+
+    DrawShellText(string.format("%d%%", math.floor(volume * 100 + 0.5)), fontBold, st.labelFontSize, st.labelFontSize,
+        vec2(trackMax.x, min.y), max - vec2(st.labelX, 0), active and card.textColor or card.busyColor, ui.Alignment.End)
+end
+
 local howtoKeys = {
     { key = "I", text = "Open or close this menu" },
     { key = "N", text = "Challenge the nearest driver" },
@@ -422,6 +500,9 @@ local function ContentHeight(tab)
     if tab == "profile" then
         local pr = m.profile
         return card.size.y + pr.gap + 2 * pr.statStep - (pr.statStep - pr.statHeight)
+    elseif tab == "settings" then
+        local st = m.settings
+        return 2 * st.rowStep - (st.rowStep - st.rowHeight)
     elseif tab == "howto" then
         local h = m.howto
         local rows = math.ceil(#howtoKeys / h.keyColumns)
@@ -433,6 +514,7 @@ end
 local subtitles = {
     challenge = "Choose a driver, a course and a race type  ·  I to close",
     profile = "Your rating and progress  ·  I to close",
+    settings = "Sound and volume  ·  I to close",
     howto = "Rules and controls  ·  I to close",
 }
 
@@ -462,6 +544,8 @@ local function DrawTougeMenu()
 
             if menuTab == "profile" then
                 DrawProfileTab(top)
+            elseif menuTab == "settings" then
+                DrawSettingsTab(top, mousePos)
             elseif menuTab == "howto" then
                 DrawHowToTab(top)
             else

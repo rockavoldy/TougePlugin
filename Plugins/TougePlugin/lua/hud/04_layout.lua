@@ -36,6 +36,9 @@ local layout = {
             popupSlide = 60, -- popups slide in from the right
             countdown = 0.3,
             countdownPop = 1.3, -- each countdown step starts this much larger
+            -- Colour of the shade an element is drawn through while it fades; dark so a fading
+            -- element does not flash a bright pane.
+            fadeTint = rgbm(0.1, 0.12, 0.16, 1),
         },
 
         -- Corner radii, shared by every shape so the corners match: the window, cards and
@@ -197,6 +200,22 @@ local layout = {
                 statHeight = 40,
                 statStep = 48,
                 statFontSize = 20,
+            },
+
+            -- Rows of the SETTINGS tab, centered: a label on the left, the control on the right.
+            settings = {
+                rowWidth = 600,
+                rowHeight = 48,
+                rowStep = 56,
+                labelX = 16,
+                labelFontSize = 20,
+                controlX = 220, -- where the control starts, from the row's left edge
+                pillSize = vec2(96, 28),
+                pillGap = 8,
+                trackHeight = 8,
+                knobRadius = 11,
+                valueWidth = 64, -- the percentage, right-aligned at the row's end
+                wheelStep = 0.05, -- volume change per mouse wheel notch
             },
 
             howto = {

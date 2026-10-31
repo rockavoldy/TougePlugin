@@ -106,6 +106,13 @@ if debugHud then
         if ui.button("Reset") then ResetMock() end
 
         ui.separator()
+        ui.text(string.format("Elo %.1f -> %s | showElo %s | discrete %s", elo, tostring(targetElo), tostring(showElo), tostring(discreteMode)))
+        ui.text(string.format("Hint hidden %s | auto-hidden %s | speed %.0f km/h | menu open %s",
+            tostring(hasTutorialHidden), tostring(isTutorialAutoHidden), car ~= nil and car.speedKmh or -1, tostring(hasInviteMenuOpen)))
+        ui.text(string.format("Fade: elo %.2f | hint %.2f | menu %.2f | frame %.4f s",
+            tweenValues.elo or 0, tweenValues.hint or 0, tweenValues.menu or 0, lastTweenDelta))
+
+        ui.separator()
         ui.text("Session state")
         for i, name in ipairs(stateNames) do
             if i > 1 then ui.sameLine() end
@@ -162,7 +169,7 @@ if debugHud then
         if ui.button("1 player") then MockLobbyStatus(1) end
         ui.sameLine()
         if ui.button("5 players") then MockLobbyStatus(5) end
-        for _, tab in ipairs({ { "challenge", "Challenge" }, { "profile", "Profile" }, { "howto", "How to play" } }) do
+        for _, tab in ipairs({ { "challenge", "Challenge" }, { "profile", "Profile" }, { "settings", "Settings" }, { "howto", "How to play" } }) do
             ui.sameLine()
             if ui.button("Menu: " .. tab[2]) then
                 mockActive = true

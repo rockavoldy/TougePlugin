@@ -100,11 +100,12 @@ local function checkTimeout(activatedAt, duration)
     return false
 end
 
--- Plays the sound in the named slot of soundSlots, restarting it if it is still playing.
--- Does nothing until the slot's file has loaded, or when it has none.
+-- Plays the sound in the named slot of soundSlots at the player's master volume,
+-- restarting it if it is still playing. Does nothing while sound is off, until the slot's
+-- file has loaded, or when it has none.
 local function PlaySound(name)
     local path = soundPaths[name]
-    if path == nil then
+    if path == nil or not settings.soundEnabled or settings.soundVolume <= 0 then
         return
     end
 
@@ -116,7 +117,7 @@ local function PlaySound(name)
     local ok, event = pcall(ac.AudioEvent.fromFile, { filename = path, use3D = false, loop = false }, false)
     if ok and event ~= nil then
         soundEvents[name] = event
-        event.volume = event.volume * soundSlots[name].volume
+        event.volume = event.volume * soundSlots[name].volume * settings.soundVolume
         event:start()
     end
 end
