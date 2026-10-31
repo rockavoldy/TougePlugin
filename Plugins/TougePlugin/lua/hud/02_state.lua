@@ -28,6 +28,7 @@ local selectedPlayerId = -1
 local lastLobbyStatusRequest = 0
 local lobbyCooldown = 1.0  -- Cooldown in seconds
 local courseNames = {}
+local courseScroll = 0 -- first visible row of the Initial D course select
 local showRaceTypeToggle = false
 local isToggleCourse = true
 

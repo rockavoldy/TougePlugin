@@ -7,8 +7,13 @@ function script.drawUI(dt)
     DrawStandings()
     DrawElo()
     DrawTutorial()
-    DrawInviteMenu()
-    DrawCourseSelect()
+    if useIdHud then
+        DrawIdInviteMenu()
+        DrawIdCourseSelect()
+    else
+        DrawInviteMenu()
+        DrawCourseSelect()
+    end
     DrawCluster()
     DrawCountdown()
     DrawPopups()

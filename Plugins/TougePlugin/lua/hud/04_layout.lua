@@ -143,6 +143,52 @@ local layout = {
         digitSize = vec2(23, 26), -- position digits scaled to the band
     },
 
+    -- Invite menu and course select as a stack of label-less name rows, anchored top-right.
+    -- The first row is the title; the band of the title row holds the race type toggle.
+    idPanel = {
+        marginRight = 50, -- reference pixels
+        marginTop = 50,
+        rowImage = assets.images.idNameBlank,
+        rowSize = vec2(500, 70),
+        listTop = 80, -- shell y of the first list row, below the title row
+        rowStep = 76,
+        maxVisibleRows = 10, -- more course rows scroll with the mouse wheel
+
+        label = vec2(38, 1),
+        labelFontSize = 13,
+        labelColor = rgbm(0.44, 0.65, 0.87, 1), -- the shells' "DRIVER" blue
+        nameMin = vec2(100, 3),
+        nameMax = vec2(420, 39),
+        nameFontSize = 26,
+        nameMinFontSize = 20,
+        bandMin = vec2(40, 39),
+        bandMax = vec2(460, 68),
+        bandFontSize = 18,
+        bandMinFontSize = 14,
+        digitsCenterX = 250,
+        digitsY = 41,
+        digitSize = vec2(23, 26),
+        avatar = vec2(40, 6),
+        avatarSize = 58,
+
+        hoverMin = vec2(30, 3),
+        hoverMax = vec2(470, 68),
+        hoverColor = rgbm(1, 1, 1, 0.1),
+        textColor = rgbm(1, 1, 1, 1),
+        busyColor = rgbm(0.55, 0.55, 0.55, 1),
+        bandTextColor = rgbm(0.59, 0.75, 0.9, 1), -- as the driver's car name in the cluster
+
+        toggle = {
+            min = vec2(150, 42),
+            max = vec2(350, 66),
+            fontSize = 15,
+            selected = rgbm(0.34, 0.45, 0.87, 1), -- the driver's blue
+            idle = rgbm(1, 1, 1, 0.12),
+            border = rgbm(0.8, 0.85, 1, 0.6),
+            rounding = 4,
+        },
+    },
+
     -- Initial D in-race cluster, anchored top-right: the advantage shell, the Driver vs Rival
     -- shell below it, and the round results under that. Positions are from the D Extra
     -- app's D6 config.

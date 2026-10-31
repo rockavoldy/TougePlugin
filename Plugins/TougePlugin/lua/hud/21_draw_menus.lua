@@ -1,5 +1,31 @@
 -- Right-hand panel: invite menu and course select.
 
+-- Number of filled nearby player slots; empty slots have an empty name.
+local function CountNearbyPlayers()
+    local playerCount = 0
+    while playerCount < 5 and nearbyPlayers[playerCount + 1] and nearbyPlayers[playerCount + 1].name ~= "" do
+        playerCount = playerCount + 1
+    end
+    return playerCount
+end
+
+local function ChooseNearbyPlayer(player)
+    hasInviteMenuOpen = false
+    if #courseNames > 1 then
+        -- Show a menu to choose from the different courses.
+        hasCourseSelectOpen = true
+        selectedPlayerId = player.id
+        courseScroll = 0
+    else
+        SendToServer(inviteEvent, {inviteSenderName = "", inviteRecipientGuid = player.id, isCourse = isToggleCourse})
+    end
+end
+
+local function ChooseCourse(course)
+    SendToServer(inviteEvent, {inviteSenderName = "", inviteRecipientGuid = selectedPlayerId, courseName = course, isCourse = isToggleCourse})
+    hasCourseSelectOpen = false
+end
+
 local function PanelPos()
     local p = layout.panel
     return vec2(windowWidth - scaling.size(p.marginRight + p.size.x), scaling.size(p.marginTop))
@@ -64,11 +90,7 @@ local function DrawInviteMenu()
             DrawText("No other players online", font, p.titleFontSize, scaling.size(p.title))
         end
 
-        -- Empty slots have an empty name.
-        local playerCount = 0
-        while playerCount < 5 and nearbyPlayers[playerCount + 1] and nearbyPlayers[playerCount + 1].name ~= "" do
-            playerCount = playerCount + 1
-        end
+        local playerCount = CountNearbyPlayers()
 
         if playerCount > 0 then
             DrawText("Nearby", font, p.titleFontSize, scaling.size(p.title))
@@ -83,14 +105,7 @@ local function DrawInviteMenu()
             local cardMax = DrawCard(cardPos)
 
             if ConsumeClickIn(mousePos, cardPos, cardMax) then
-                hasInviteMenuOpen = false
-                if #courseNames > 1 then
-                    -- Show a menu to choose from the different courses.
-                    hasCourseSelectOpen = true
-                    selectedPlayerId = player.id
-                else
-                    SendToServer(inviteEvent, {inviteSenderName = "", inviteRecipientGuid = player.id, isCourse = isToggleCourse})
-                end
+                ChooseNearbyPlayer(player)
             end
 
             DrawAvatar(player.id, cardPos)
@@ -121,9 +136,7 @@ local function DrawCourseSelect()
                     local cardMax = DrawCard(cardPos)
 
                     if ConsumeClickIn(mousePos, cardPos, cardMax) then
-                        -- Send invite with the selected course
-                        SendToServer(inviteEvent, {inviteSenderName = "", inviteRecipientGuid = selectedPlayerId, courseName = course, isCourse = isToggleCourse})
-                        hasCourseSelectOpen = false
+                        ChooseCourse(course)
                     end
 
                     DrawCardName(course, cardPos)
