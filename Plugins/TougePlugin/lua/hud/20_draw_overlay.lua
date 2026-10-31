@@ -56,9 +56,11 @@ local function DrawEloRow()
     ui.transparentWindow("eloWindow", scaling.size(l.pos), l.size * ShellScale(), function ()
         local displayElo = math.floor(elo + 0.5)
         DrawShellSprite(l.image, vec2(0, 0), l.size)
-        DrawShellLabel("ELO", l.label, l.labelFontSize, l.labelColor)
+        -- The Elo colour goes on the label: tinting the chrome digits makes them unreadable
+        -- on the navy band for most colours.
+        DrawShellLabel("ELO", l.label, l.labelFontSize, GetEloColor(displayElo))
         DrawShellText(ac.getDriverName(0), fontSemiBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, rgbm(1, 1, 1, 1))
-        DrawShellNumber(displayElo, l.digitsCenterX, l.digitsY, l.digitSize, GetEloColor(displayElo))
+        DrawShellNumber(displayElo, l.digitsCenterX, l.digitsY, l.digitSize)
     end)
 end
 
