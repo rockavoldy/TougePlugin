@@ -100,20 +100,23 @@ local function checkTimeout(activatedAt, duration)
     return false
 end
 
-local function PlayCountdownSound()
-    if countdownSoundPath == nil then
+-- Plays the sound in the named slot of soundSlots, restarting it if it is still playing.
+-- Does nothing until the slot's file has loaded, or when it has none.
+local function PlaySound(name)
+    local path = soundPaths[name]
+    if path == nil then
         return
     end
 
-    if countdownSoundEvent ~= nil then
-        pcall(countdownSoundEvent.dispose, countdownSoundEvent)
-        countdownSoundEvent = nil
+    if soundEvents[name] ~= nil then
+        pcall(soundEvents[name].dispose, soundEvents[name])
+        soundEvents[name] = nil
     end
 
-    local ok, event = pcall(ac.AudioEvent.fromFile, { filename = countdownSoundPath, use3D = false, loop = false }, false)
+    local ok, event = pcall(ac.AudioEvent.fromFile, { filename = path, use3D = false, loop = false }, false)
     if ok and event ~= nil then
-        countdownSoundEvent = event
-        event.volume = event.volume * 5
+        soundEvents[name] = event
+        event.volume = event.volume * soundSlots[name].volume
         event:start()
     end
 end

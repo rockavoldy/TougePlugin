@@ -99,7 +99,11 @@ local function DrawPill(min, max, text, fontSize, selected, mousePos)
         Outline(min, max, layout.as6Panel.card.hover, radius, 2)
     end
     InsetText(text, fontSemiBold, fontSize, fontSize * 0.8, min, max, selected and t.selectedText or t.idleText, radius)
-    return not selected and Hovered(mousePos, min, max) and Clicked(mousePos, min, max)
+    local clicked = not selected and Hovered(mousePos, min, max) and Clicked(mousePos, min, max)
+    if clicked then
+        PlaySound("pick")
+    end
+    return clicked
 end
 
 -- Draws a card of the given width with its top-left at pos. content fields: boxText, chips
@@ -258,7 +262,8 @@ local function DrawChallengeTab(top, height, mousePos)
             busy = player.inRace,
             image = GetCarPreviewPath(player.sessionId),
         }, player.id == selectedPlayerId)
-        if clicked then
+        if clicked and player.id ~= selectedPlayerId then
+            PlaySound("pick")
             selectedPlayerId = player.id
         end
     end
@@ -310,6 +315,7 @@ local function DrawChallengeTab(top, height, mousePos)
         if not selected and Hovered(mousePos, min, max) then
             Outline(min, max, card.hover, radii.card, 1.5)
             if Clicked(mousePos, min, max) then
+                PlaySound("pick")
                 selectedCourseIndex = index
             end
         end

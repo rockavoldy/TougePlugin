@@ -7,6 +7,7 @@ local assets = {
     },
     fontsZip = baseUrl .. "fonts.zip?v=2",
     countdownZip = baseUrl .. "countdown.zip?v=4-beeps",
+    soundsZip = baseUrl .. "sounds.zip?v=1",
     -- Digit sprites from the D Extra app's D6 theme, the same theme as the id/ shells.
     idDigitsZip = baseUrl .. "id/id_digits.zip?v=2",
 }
@@ -37,7 +38,22 @@ web.loadRemoteAssets(assets.countdownZip, function(err, folder)
         return
     end
 
-    countdownSoundPath = folder .. "/countdown.wav"
+    soundPaths.countdown = folder .. "/countdown.wav"
+end)
+
+-- UI sounds. Only the slots whose file is in the zip get a path.
+web.loadRemoteAssets(assets.soundsZip, function(err, folder)
+    if err then
+        print("Failed to load UI sounds: " .. err)
+        return
+    end
+
+    for name in pairs(soundSlots) do
+        local path = folder .. "/" .. name .. ".wav"
+        if name ~= "countdown" and io.fileExists(path) then
+            soundPaths[name] = path
+        end
+    end
 end)
 
 -- Initial D digit sprites. Stays nil until the zip has loaded; the cluster is not drawn

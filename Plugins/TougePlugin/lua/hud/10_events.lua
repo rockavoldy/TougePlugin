@@ -11,7 +11,12 @@ local function OnSessionState(message)
     standings[1] = message.result1
     standings[2] = message.result2
     standings[3] = message.result3
+    local previousState = currentHudState
     if message.sessionState ~= HudStates.NoUpdate then currentHudState = message.sessionState end
+    if currentHudState == HudStates.Finished and previousState ~= HudStates.Finished then
+        -- The same rule as the cluster's YOU WIN / YOU LOSE label.
+        PlaySound(standings[3] == RaceResults.Win and "win" or "lose")
+    end
 
     if message.rivalSessionId >= 0 then
         rivalCar = FindCarBySessionId(message.rivalSessionId)
@@ -35,6 +40,7 @@ local function OnInvite(message)
         inviteSenderElo = message.inviteSenderElo
         inviteCourseName = message.courseName or ""
         inviteActivatedAt = os.clock()
+        PlaySound("invite")
     end
 end
 
@@ -46,9 +52,10 @@ local function OnNotification(message)
         notificationMessage = message.message
         hasIncomingNotification = true
         notificationActivatedAt = os.clock()
+        PlaySound("notify")
     else
         if message.message == "Ready..." then
-            PlayCountdownSound()
+            PlaySound("countdown")
         end
         countdownHudMessage = message.message
         isCountdownHudActive = true

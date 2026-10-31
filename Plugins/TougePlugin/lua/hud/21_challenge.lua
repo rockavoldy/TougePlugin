@@ -17,10 +17,12 @@ local function SendChallenge(player)
         payload.courseName = courseNames[selectedCourseIndex]
     end
     SendToServer(inviteEvent, payload)
+    PlaySound("send")
     hasInviteMenuOpen = false
 end
 
 local function AcceptInvite()
     SendToServer(inviteEvent, {inviteSenderName = "a", inviteRecipientGuid = 1})
+    PlaySound("accept")
     hasActiveInvite = false
 end

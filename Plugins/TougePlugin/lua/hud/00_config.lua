@@ -27,3 +27,18 @@ local RaceResults = {
     Loss = 2,
     Tie = 3,
 }
+
+-- UI sounds, loaded from sounds.zip as <name>.wav. A slot without a file stays silent.
+-- Volume multiplies the file's own level.
+local soundSlots = {
+    pick = { volume = 1 },      -- a tab, driver, course or race type is clicked
+    open = { volume = 1 },      -- the menu opens
+    close = { volume = 1 },     -- the menu closes
+    send = { volume = 1 },      -- a challenge is sent
+    accept = { volume = 1 },    -- a challenge is accepted
+    invite = { volume = 1 },    -- a challenge arrives
+    notify = { volume = 1 },    -- a notification arrives
+    win = { volume = 1 },       -- the session ends in a win
+    lose = { volume = 1 },      -- the session ends in a loss
+    countdown = { volume = 5 }, -- from countdown.zip, played on "Ready..."
+}

@@ -46,8 +46,8 @@ local notificationActivatedAt = nil
 local countdownHudMessage = ""
 local isCountdownHudActive = false
 local countdownActivatedAt = nil
-local countdownSoundPath = nil
-local countdownSoundEvent = nil
+local soundPaths = {} -- slot name to the local file, filled as the sound zips load
+local soundEvents = {} -- slot name to the ac.AudioEvent playing it
 
 local forfeitStartTime = nil
 local forfeitHoldDuration = 3.0 -- seconds

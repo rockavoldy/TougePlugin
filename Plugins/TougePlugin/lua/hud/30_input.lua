@@ -9,9 +9,11 @@ local function InputCheck()
     if KeyPressed(ui.KeyIndex.N) then
         -- Send invite
         SendToServer(inviteEvent, {inviteSenderName = "nearby", inviteRecipientGuid = 1})
+        PlaySound("send")
     end
     if KeyPressed(ui.KeyIndex.I) then
         hasInviteMenuOpen = not hasInviteMenuOpen
+        PlaySound(hasInviteMenuOpen and "open" or "close")
         if hasInviteMenuOpen then
             local now = os.clock()
             if now - lastLobbyStatusRequest > lobbyCooldown then
