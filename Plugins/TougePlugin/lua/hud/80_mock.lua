@@ -163,7 +163,17 @@ if debugHud then
         ui.sameLine()
         if ui.button("5 players") then MockLobbyStatus(5) end
         ui.sameLine()
-        if ui.button("Course select") then
+        if useIdHud then
+            -- The course select is part of the integrated menu's Challenge tab.
+            for _, tab in ipairs({ { "challenge", "Challenge" }, { "profile", "Profile" }, { "howto", "How to play" } }) do
+                ui.sameLine()
+                if ui.button("Menu: " .. tab[2]) then
+                    mockActive = true
+                    menuTab = tab[1]
+                    hasInviteMenuOpen = true
+                end
+            end
+        elseif ui.button("Course select") then
             mockActive = true
             hasInviteMenuOpen = false
             hasCourseSelectOpen = true

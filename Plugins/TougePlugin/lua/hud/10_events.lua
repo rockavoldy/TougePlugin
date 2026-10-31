@@ -34,6 +34,7 @@ local function OnInvite(message)
         inviteSenderName = message.inviteSenderName
         inviteSenderElo = message.inviteSenderElo
         inviteSenderId = message.inviteSenderId
+        inviteCourseName = message.courseName or ""
         inviteActivatedAt = os.clock()
     end
 end
@@ -73,6 +74,7 @@ local function OnInitialization(message)
     elo = message.elo - 100
     targetElo = message.elo
 
+    racesCompleted = message.racesCompleted
     if message.racesCompleted >= 3 then
         isTutorialAutoHidden = true
     end

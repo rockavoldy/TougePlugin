@@ -18,6 +18,7 @@ local racesCompleted = 0
 local inviteSenderName = ""
 local inviteSenderElo = -1
 local inviteSenderId = ""
+local inviteCourseName = ""
 local hasActiveInvite = false
 local inviteActivatedAt = nil
 
@@ -28,7 +29,9 @@ local selectedPlayerId = -1
 local lastLobbyStatusRequest = 0
 local lobbyCooldown = 1.0  -- Cooldown in seconds
 local courseNames = {}
-local courseScroll = 0 -- first visible row of the Initial D course select
+local courseScroll = 0 -- first visible row of the Initial D course list
+local selectedCourseIndex = 1
+local menuTab = "challenge" -- "challenge", "profile" or "howto"
 local showRaceTypeToggle = false
 local isToggleCourse = true
 

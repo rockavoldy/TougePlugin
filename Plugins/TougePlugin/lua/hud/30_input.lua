@@ -25,9 +25,7 @@ local function InputCheck()
         end
     end
     if hasActiveInvite and KeyPressed(ui.KeyIndex.M) then
-        -- Accept invite
-        SendToServer(inviteEvent, {inviteSenderName = "a", inviteRecipientGuid = 1})
-        hasActiveInvite = false
+        AcceptInvite()
     end
     if KeyPressed(ui.KeyIndex.H) then
         hasTutorialHidden = not hasTutorialHidden

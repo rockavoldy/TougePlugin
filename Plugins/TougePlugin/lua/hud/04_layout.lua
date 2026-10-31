@@ -248,6 +248,80 @@ local layout = {
             hoverThickness = 3,
             hoverGlowThickness = 8,
         },
+
+        -- The integrated menu, centered on the screen: title bar with tabs, subtitle, an
+        -- optional pending challenge banner, then the tab content.
+        menu = {
+            width = 980,
+            height = 620, -- without the banner
+            titleText = vec2(24, 0), -- "TOUGE", left-aligned in the title bar
+            tabs = { right = 964, y = 11, size = vec2(140, 28), gap = 8, fontSize = 14 },
+            subtitleMin = vec2(40, 60),
+            subtitleMax = vec2(940, 84),
+
+            banner = {
+                y = 94,
+                height = 54,
+                margin = 16,
+                fontSize = 18,
+                buttonSize = vec2(150, 34),
+            },
+            bannerSpace = 62, -- how far the content moves down while the banner shows
+
+            contentTop = 96,
+            captionHeight = 26,
+            captionFontSize = 13,
+            captionColor = rgbm(0.25, 0.28, 0.32, 1),
+            leftX = 16,
+            leftWidth = 472,
+            rightX = 504,
+            rightWidth = 460,
+
+            courseCard = {
+                height = 46,
+                step = 52,
+                maxVisible = 5,
+                fontSize = 20,
+                minFontSize = 15,
+            },
+
+            summaryFontSize = 15,
+            send = {
+                size = vec2(300, 46),
+                bottom = 22, -- from the bottom of the menu
+                fontSize = 20,
+                topColor = rgbm(1, 0.9, 0.55, 1), -- gold gradient
+                bottomColor = rgbm(0.86, 0.64, 0.18, 1),
+                hoverTopColor = rgbm(1, 0.95, 0.7, 1),
+                disabled = rgbm(0.7, 0.73, 0.77, 0.9),
+                text = rgbm(0.2, 0.15, 0.05, 1),
+                disabledText = rgbm(0.95, 0.96, 0.97, 1),
+            },
+
+            profile = {
+                cardWidth = 600,
+                statsTop = 220,
+                statStep = 44,
+                statFontSize = 20,
+            },
+
+            howto = {
+                textWidth = 860,
+                bodyFontSize = 17,
+                keysTop = 260,
+                keySize = vec2(46, 46),
+                keyStep = 210,
+                keyFontSize = 22,
+                keyLabelFontSize = 15,
+            },
+
+            hint = { -- shown instead of the tutorial panel while the menu is closed
+                marginLeft = 50, -- reference pixels
+                marginBottom = 50,
+                size = vec2(300, 34),
+                fontSize = 14,
+            },
+        },
     },
 
     -- Initial D in-race cluster, anchored top-right: the advantage shell, the Driver vs Rival

@@ -26,6 +26,22 @@ local function ChooseCourse(course)
     hasCourseSelectOpen = false
 end
 
+-- Sends the challenge picked in the integrated menu. As with the old menus, the course is
+-- only named when there is more than one.
+local function SendChallenge(player)
+    local payload = {inviteSenderName = "", inviteRecipientGuid = player.id, isCourse = isToggleCourse}
+    if #courseNames > 1 then
+        payload.courseName = courseNames[selectedCourseIndex]
+    end
+    SendToServer(inviteEvent, payload)
+    hasInviteMenuOpen = false
+end
+
+local function AcceptInvite()
+    SendToServer(inviteEvent, {inviteSenderName = "a", inviteRecipientGuid = 1})
+    hasActiveInvite = false
+end
+
 local function PanelPos()
     local p = layout.panel
     return vec2(windowWidth - scaling.size(p.marginRight + p.size.x), scaling.size(p.marginTop))

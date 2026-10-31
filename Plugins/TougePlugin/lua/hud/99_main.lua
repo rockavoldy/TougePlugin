@@ -6,11 +6,11 @@ function script.drawUI(dt)
 
     DrawStandings()
     DrawElo()
-    DrawTutorial()
     if useIdHud then
-        DrawIdInviteMenu()
-        DrawIdCourseSelect()
+        DrawMenuHint()
+        DrawTougeMenu()
     else
+        DrawTutorial()
         DrawInviteMenu()
         DrawCourseSelect()
     end
