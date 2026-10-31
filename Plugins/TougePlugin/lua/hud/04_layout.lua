@@ -126,21 +126,20 @@ local layout = {
     -- them to reference pixels so the shells are drawn 1:1 at 1080p (see 06_shell.lua).
     shellScale = 1440 / 1080,
 
-    -- Elo on the label-less name shell: label tab, player name in the header strip and the
-    -- Elo number as chrome digits in the band.
-    eloRow = {
-        image = assets.images.idNameBlank,
+    -- Compact Elo card, top-left, in the style of the menu cards: the Elo in a white box,
+    -- the player's name and an Elo-coloured chip beside it.
+    eloCard = {
         pos = vec2(50, 50), -- reference pixels from the top-left of the screen
-        size = vec2(500, 70),
-        label = vec2(38, 1),
-        labelFontSize = 13,
-        nameMin = vec2(100, 3),
-        nameMax = vec2(420, 39),
-        nameFontSize = 26,
-        nameMinFontSize = 20,
-        digitsCenterX = 250,
-        digitsY = 41,
-        digitSize = vec2(23, 26), -- position digits scaled to the band
+        size = vec2(300, 56),
+        boxMin = vec2(6, 6),
+        boxMax = vec2(100, 50),
+        boxFontSize = 26,
+        nameMin = vec2(112, 6),
+        nameMax = vec2(288, 32),
+        nameFontSize = 19,
+        nameMinFontSize = 14,
+        chipMin = vec2(112, 34),
+        chipSize = vec2(64, 15),
     },
 
     -- Invite menu and course select in the style of the Initial D Arcade Stage 6 menus:
@@ -206,7 +205,7 @@ local layout = {
 
             -- White box on the left with the headline value (Elo, race type) in red.
             boxMin = vec2(8, 8),
-            boxMax = vec2(146, 56),
+            boxMax = vec2(116, 56),
             boxFill = rgbm(1, 1, 1, 1),
             boxBorder = rgbm(0.7, 0.74, 0.78, 1),
             boxFontSize = 26,
@@ -215,19 +214,21 @@ local layout = {
             -- Grey tag chips under the box.
             chipY = 61,
             chipHeight = 17,
-            chipWidth = 67,
+            chipWidth = 52,
             chipGap = 4,
             chipFontSize = 11,
             chipFill = rgbm(0.6, 0.64, 0.69, 1),
             chipText = rgbm(1, 1, 1, 1),
 
-            -- Silver info area on the right: caption, big name, detail line.
-            infoMin = vec2(152, 8),
+            -- Silver info area on the right: car image, caption, big name, detail line. The
+            -- info area and the text end rightInset / textRightInset before the card's edge.
+            infoMin = vec2(122, 8),
             infoMax = vec2(488, 78),
+            rightInset = 8,
             infoTop = rgbm(0.99, 0.99, 1, 1),
             infoBottom = rgbm(0.85, 0.87, 0.9, 1),
-            textLeft = 164, -- moves right by avatarShift when an avatar is shown
-            textRight = 480,
+            textLeft = 134, -- moves right by imageShift when a car image is shown
+            textRightInset = 20,
             captionY = vec2(9, 25),
             captionFontSize = 13,
             nameY = vec2(24, 58),
@@ -238,9 +239,13 @@ local layout = {
             textColor = rgbm(0.13, 0.14, 0.16, 1),
             mutedColor = rgbm(0.36, 0.39, 0.43, 1),
             busyColor = rgbm(0.55, 0.57, 0.6, 1),
-            avatar = vec2(160, 13),
-            avatarSize = 60,
-            avatarShift = 68,
+            -- Car skin preview, 16:9, cropped to the middle of the picture where the car is.
+            image = vec2(128, 20),
+            imageSize = vec2(80, 45),
+            imageShift = 82,
+            imageUvMin = vec2(0.14, 0.14),
+            imageUvMax = vec2(0.86, 0.86),
+            imageBorder = rgbm(0.72, 0.77, 0.82, 1),
 
             -- Gold frame around the card under the mouse.
             hover = rgbm(0.93, 0.76, 0.3, 1),
@@ -251,31 +256,34 @@ local layout = {
 
         -- The integrated menu, centered on the screen: title bar with tabs, subtitle, an
         -- optional pending challenge banner, then the tab content.
+        -- Everything keeps padding from the window's edges; the window's height follows the
+        -- open tab's content.
         menu = {
             width = 980,
-            height = 620, -- without the banner
+            padding = 24,
             titleText = vec2(24, 0), -- "TOUGE", left-aligned in the title bar
-            tabs = { right = 964, y = 11, size = vec2(140, 28), gap = 8, fontSize = 14 },
-            subtitleMin = vec2(40, 60),
-            subtitleMax = vec2(940, 84),
+            tabs = { right = 956, y = 11, size = vec2(140, 28), gap = 8, fontSize = 14 },
+            subtitleMin = vec2(24, 62),
+            subtitleMax = vec2(956, 86),
 
             banner = {
-                y = 94,
+                y = 100,
                 height = 54,
-                margin = 16,
+                margin = 24,
                 fontSize = 18,
                 buttonSize = vec2(150, 34),
             },
-            bannerSpace = 62, -- how far the content moves down while the banner shows
+            bannerSpace = 66, -- how far the content moves down while the banner shows
 
-            contentTop = 96,
+            contentTop = 100,
             captionHeight = 26,
             captionFontSize = 13,
             captionColor = rgbm(0.25, 0.28, 0.32, 1),
-            leftX = 16,
-            leftWidth = 472,
+            leftX = 24,
+            leftWidth = 456,
             rightX = 504,
-            rightWidth = 460,
+            rightWidth = 452,
+            driverRows = 5, -- the Challenge tab is always tall enough for five drivers
 
             courseCard = {
                 height = 46,
@@ -283,12 +291,12 @@ local layout = {
                 maxVisible = 5,
                 fontSize = 20,
                 minFontSize = 15,
+                chipWidth = 46,
             },
 
             summaryFontSize = 15,
             send = {
                 size = vec2(300, 46),
-                bottom = 22, -- from the bottom of the menu
                 fontSize = 20,
                 topColor = rgbm(1, 0.9, 0.55, 1), -- gold gradient
                 bottomColor = rgbm(0.86, 0.64, 0.18, 1),
@@ -300,19 +308,22 @@ local layout = {
 
             profile = {
                 cardWidth = 600,
-                statsTop = 220,
-                statStep = 44,
+                gap = 12, -- between the card and the stat rows
+                statHeight = 40,
+                statStep = 48,
                 statFontSize = 20,
             },
 
             howto = {
-                textWidth = 860,
+                bodyHeight = 132,
+                bodyPadding = 16,
                 bodyFontSize = 17,
-                keysTop = 260,
+                keysGap = 20, -- between the body and the key rows
+                keyColumns = 2,
                 keySize = vec2(46, 46),
-                keyStep = 210,
+                keyRowStep = 58,
                 keyFontSize = 22,
-                keyLabelFontSize = 15,
+                keyLabelFontSize = 16,
             },
 
             hint = { -- shown instead of the tutorial panel while the menu is closed

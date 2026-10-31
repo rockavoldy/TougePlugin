@@ -70,6 +70,8 @@ if debugHud then
             message['nearbyId' .. i] = present and i or 0
             message['nearbyInRace' .. i] = present and i == 3 -- one player shown as busy
             message['nearbyElo' .. i] = present and (650 + i * 150) or 0
+            -- Every mock driver shows the player's own car.
+            message['nearbySessionId' .. i] = present and car.sessionID or -1
         end
         OnLobbyStatus(message)
         hasCourseSelectOpen = false

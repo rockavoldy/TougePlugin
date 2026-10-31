@@ -86,6 +86,26 @@ local function FindCarBySessionId(sessionId)
     return nil
 end
 
+-- Path of the skin preview of the car with the given session ID, or nil when that car or
+-- its preview is missing. Results are cached per car and skin.
+local carPreviewCache = {}
+local function GetCarPreviewPath(sessionId)
+    local c = FindCarBySessionId(sessionId)
+    if c == nil then
+        return nil
+    end
+    local carId, skinId = ac.getCarID(c.index), ac.getCarSkinID(c.index)
+    if carId == nil or skinId == nil then
+        return nil
+    end
+    local key = carId .. "/" .. skinId
+    if carPreviewCache[key] == nil then
+        local path = ac.getFolder(ac.FolderID.ContentCars) .. "/" .. carId .. "/skins/" .. skinId .. "/preview.jpg"
+        carPreviewCache[key] = io.fileExists(path) and path or false
+    end
+    return carPreviewCache[key] or nil
+end
+
 local function checkTimeout(activatedAt, duration)
     if activatedAt ~= nil and os.clock() - activatedAt >= duration then
         return true

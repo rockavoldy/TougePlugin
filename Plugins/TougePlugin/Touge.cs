@@ -269,7 +269,8 @@ public class Touge : BackgroundService, IHostedService
                     { "name", car.Client!.Name! },
                     { "id", car.Client!.Guid! },
                     { "inRace", IsInTougeSession(car) },
-                    { "elo", elo }
+                    { "elo", elo },
+                    { "sessionId", (int)car.SessionId }
                 };
             });
 
@@ -286,7 +287,8 @@ public class Touge : BackgroundService, IHostedService
                         { "name", "" },
                         { "id", (ulong)0 },
                         { "inRace", false },
-                        { "elo", -1 }
+                        { "elo", -1 },
+                        { "sessionId", -1 }
                     });
                 }
             }
@@ -299,22 +301,27 @@ public class Touge : BackgroundService, IHostedService
                 NearbyPlayerId1 = (ulong)playerStatsList[0]["id"],
                 NearbyPlayerInRace1 = (bool)playerStatsList[0]["inRace"],
                 NearbyPlayerElo1 = (int)playerStatsList[0]["elo"],
+                NearbyPlayerSessionId1 = (int)playerStatsList[0]["sessionId"],
                 NearbyPlayerName2 = (string)playerStatsList[1]["name"],
                 NearbyPlayerId2 = (ulong)playerStatsList[1]["id"],
                 NearbyPlayerInRace2 = (bool)playerStatsList[1]["inRace"],
                 NearbyPlayerElo2 = (int)playerStatsList[1]["elo"],
+                NearbyPlayerSessionId2 = (int)playerStatsList[1]["sessionId"],
                 NearbyPlayerName3 = (string)playerStatsList[2]["name"],
                 NearbyPlayerId3 = (ulong)playerStatsList[2]["id"],
                 NearbyPlayerInRace3 = (bool)playerStatsList[2]["inRace"],
                 NearbyPlayerElo3 = (int)playerStatsList[2]["elo"],
+                NearbyPlayerSessionId3 = (int)playerStatsList[2]["sessionId"],
                 NearbyPlayerName4 = (string)playerStatsList[3]["name"],
                 NearbyPlayerId4 = (ulong)playerStatsList[3]["id"],
                 NearbyPlayerInRace4 = (bool)playerStatsList[3]["inRace"],
                 NearbyPlayerElo4 = (int)playerStatsList[3]["elo"],
+                NearbyPlayerSessionId4 = (int)playerStatsList[3]["sessionId"],
                 NearbyPlayerName5 = (string)playerStatsList[4]["name"],
                 NearbyPlayerId5 = (ulong)playerStatsList[4]["id"],
                 NearbyPlayerInRace5 = (bool)playerStatsList[4]["inRace"],
                 NearbyPlayerElo5 = (int)playerStatsList[4]["elo"],
+                NearbyPlayerSessionId5 = (int)playerStatsList[4]["sessionId"],
             });
         }
         catch (Exception ex)

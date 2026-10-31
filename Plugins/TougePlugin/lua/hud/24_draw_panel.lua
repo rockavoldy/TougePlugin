@@ -85,7 +85,7 @@ local function DrawPill(min, max, text, fontSize, selected, mousePos)
 end
 
 -- Draws a card of the given width with its top-left at pos. content fields: boxText, chips
--- (list of { text, fill }), caption, name, detail, busy, avatar (image path or nil).
+-- (list of { text, fill }), caption, name, detail, busy, image (car preview path or nil).
 -- Selected cards keep the gold frame; others get a thin one under the mouse. Returns true
 -- when the card was clicked this frame (never when mousePos is nil).
 local function DrawAs6Card(pos, width, mousePos, content, selected)
@@ -109,17 +109,21 @@ local function DrawAs6Card(pos, width, mousePos, content, selected)
     end
 
     -- Right: silver info area with caption, name and detail
-    local infoMax = pos + vec2(width - 8, c.infoMax.y)
+    local infoMax = pos + vec2(width - c.rightInset, c.infoMax.y)
     VerticalGradient(pos + c.infoMin, infoMax, c.infoTop, c.infoBottom)
     Outline(pos + c.infoMin, infoMax, c.border)
 
     local textLeft = c.textLeft
-    if content.avatar ~= nil then
-        DrawShellSprite(content.avatar, pos + c.avatar, vec2(c.avatarSize, c.avatarSize))
-        textLeft = textLeft + c.avatarShift
+    if content.image ~= nil then
+        local sc = ShellScale()
+        local imageMin = pos + c.image
+        local imageMax = imageMin + c.imageSize
+        ui.drawImage(content.image, imageMin * sc, imageMax * sc, rgbm(1, 1, 1, content.busy and 0.5 or 1), c.imageUvMin, c.imageUvMax)
+        Outline(imageMin, imageMax, c.imageBorder)
+        textLeft = textLeft + c.imageShift
     end
     local function Line(span)
-        return pos + vec2(textLeft, span.x), pos + vec2(width - 16, span.y)
+        return pos + vec2(textLeft, span.x), pos + vec2(width - c.textRightInset, span.y)
     end
     local captionMin, captionMax = Line(c.captionY)
     DrawShellText(content.caption, fontSemiBold, c.captionFontSize, c.captionFontSize, captionMin, captionMax, c.mutedColor, ui.Alignment.Start)
@@ -220,9 +224,6 @@ local function DrawChallengeTab(top, height, mousePos)
     end
     for index = 1, playerCount do
         local player = nearbyPlayers[index]
-        -- Skipped until the avatar has loaded, so a missing one leaves no empty square.
-        local avatarPath = GetAvatarPath(player.id)
-        local avatar = (loadSteamAvatars and ui.isImageReady(avatarPath)) and avatarPath or nil
         local pos = vec2(m.leftX, listTop + (index - 1) * card.step)
         local clicked = DrawAs6Card(pos, m.leftWidth, mousePos, {
             boxText = tostring(player.elo),
@@ -234,7 +235,7 @@ local function DrawChallengeTab(top, height, mousePos)
             name = player.name,
             detail = player.inRace and "Currently in a race" or "Click to select",
             busy = player.inRace,
-            avatar = avatar,
+            image = GetCarPreviewPath(player.sessionId),
         }, player.id == selectedPlayerId)
         if clicked then
             selectedPlayerId = player.id
@@ -279,7 +280,7 @@ local function DrawChallengeTab(top, height, mousePos)
         Fill(min, max, card.fill, card.rounding)
         Outline(min, max, selected and card.hover or card.border, card.rounding, selected and card.hoverThickness or 1)
         local chipMin = min + vec2(10, (cc.height - card.chipHeight) / 2)
-        local chipMax = chipMin + vec2(card.chipWidth * 0.8, card.chipHeight)
+        local chipMax = chipMin + vec2(cc.chipWidth, card.chipHeight)
         Fill(chipMin, chipMax, card.chipFill, 3)
         DrawShellText("No. " .. index, fontSemiBold, card.chipFontSize, card.chipFontSize, chipMin, chipMax, card.chipText)
         DrawShellText(courseNames[index], fontBold, cc.fontSize, cc.minFontSize, vec2(chipMax.x + 12, min.y), max - vec2(12, 0),
@@ -297,7 +298,7 @@ local function DrawChallengeTab(top, height, mousePos)
     end
 
     local s = m.send
-    local sendMax = vec2(x + (width + s.size.x) / 2, height - s.bottom)
+    local sendMax = vec2(x + (width + s.size.x) / 2, height - m.padding)
     local sendMin = sendMax - s.size
     local player = FindNearbyPlayer(selectedPlayerId)
     local summary = "Select a driver to challenge"
@@ -323,12 +324,13 @@ local function DrawProfileTab(top)
     local left = (m.width - pr.cardWidth) / 2
     local displayElo = math.floor(math.max(elo, 0) + 0.5)
 
-    DrawAs6Card(vec2(left, top + 20), pr.cardWidth, nil, {
+    DrawAs6Card(vec2(left, top), pr.cardWidth, nil, {
         boxText = tostring(displayElo),
         chips = { { text = "ELO", fill = GetEloColor(displayElo) } },
         caption = "DRIVER",
         name = ac.getDriverName(0),
-        detail = "Your touge profile",
+        detail = ac.getCarName(0) or "Your touge profile",
+        image = car ~= nil and GetCarPreviewPath(car.sessionID) or nil,
     }, false)
 
     local stats = {
@@ -336,9 +338,9 @@ local function DrawProfileTab(top)
         { "Races completed", tostring(racesCompleted) },
     }
     for i, stat in ipairs(stats) do
-        local y = top + pr.statsTop + (i - 1) * pr.statStep
+        local y = top + card.size.y + pr.gap + (i - 1) * pr.statStep
         local min = vec2(left, y)
-        local max = vec2(left + pr.cardWidth, y + pr.statStep - 8)
+        local max = vec2(left + pr.cardWidth, y + pr.statHeight)
         Fill(min, max, card.fill, card.rounding)
         Outline(min, max, card.border, card.rounding)
         DrawShellText(stat[1], fontSemiBold, pr.statFontSize, pr.statFontSize, min + vec2(16, 0), max, card.mutedColor, ui.Alignment.Start)
@@ -358,28 +360,46 @@ local function DrawHowToTab(top)
     local m = layout.as6Panel.menu
     local h = m.howto
     local card = layout.as6Panel.card
-    local left = (m.width - h.textWidth) / 2
+    local left, right = m.padding, m.width - m.padding
 
     local body = "Choose a driver on the Challenge tab, pick a course and a race type, and send the challenge. "
         .. "When they accept, both cars are placed at the start and the countdown begins.\n\n"
         .. "Beat your opponent to gain Elo. How much you gain depends on both drivers' Elo and cars."
-    local bodyMin = vec2(left, top + 10)
-    local bodyMax = vec2(left + h.textWidth, top + h.keysTop - 20)
-    Fill(bodyMin - vec2(12, 8), bodyMax + vec2(12, 0), card.fill, card.rounding)
-    Outline(bodyMin - vec2(12, 8), bodyMax + vec2(12, 0), card.border, card.rounding)
-    DrawParagraph(body, font, h.bodyFontSize, bodyMin, bodyMax, card.textColor)
+    local boxMin = vec2(left, top)
+    local boxMax = vec2(right, top + h.bodyHeight)
+    Fill(boxMin, boxMax, card.fill, card.rounding)
+    Outline(boxMin, boxMax, card.border, card.rounding)
+    local inset = vec2(h.bodyPadding, h.bodyPadding)
+    DrawParagraph(body, font, h.bodyFontSize, boxMin + inset, boxMax - inset, card.textColor)
 
+    local keysTop = boxMax.y + h.keysGap
+    local columnWidth = (right - left) / h.keyColumns
     for i, binding in ipairs(howtoKeys) do
-        local column = (i - 1) % 3
-        local row = math.floor((i - 1) / 3)
-        local keyMin = vec2(left + column * (h.keyStep + 80), top + h.keysTop + row * (h.keySize.y + 18))
+        local column = (i - 1) % h.keyColumns
+        local row = math.floor((i - 1) / h.keyColumns)
+        local keyMin = vec2(left + column * columnWidth, keysTop + row * h.keyRowStep)
         local keyMax = keyMin + h.keySize
         Fill(keyMin, keyMax, rgbm(1, 1, 1, 1), 6)
         Outline(keyMin, keyMax, card.border, 6, 2)
         DrawShellText(binding.key, fontBold, h.keyFontSize, h.keyFontSize, keyMin, keyMax, card.textColor)
         DrawShellText(binding.text, fontSemiBold, h.keyLabelFontSize, h.keyLabelFontSize * 0.8,
-            vec2(keyMax.x + 10, keyMin.y), vec2(keyMax.x + h.keyStep + 60, keyMax.y), card.textColor, ui.Alignment.Start)
+            vec2(keyMax.x + 14, keyMin.y), vec2(keyMin.x + columnWidth - m.padding, keyMax.y), card.textColor, ui.Alignment.Start)
     end
+end
+
+-- Height of each tab's content, from the top of the content to its bottom edge.
+local function ContentHeight(tab)
+    local m = layout.as6Panel.menu
+    local card = layout.as6Panel.card
+    if tab == "profile" then
+        local pr = m.profile
+        return card.size.y + pr.gap + 2 * pr.statStep - (pr.statStep - pr.statHeight)
+    elseif tab == "howto" then
+        local h = m.howto
+        local rows = math.ceil(#howtoKeys / h.keyColumns)
+        return h.bodyHeight + h.keysGap + rows * h.keyRowStep - (h.keyRowStep - h.keySize.y)
+    end
+    return m.captionHeight + m.driverRows * card.step - (card.step - card.size.y)
 end
 
 local subtitles = {
@@ -394,7 +414,8 @@ local function DrawTougeMenu()
     end
 
     local m = layout.as6Panel.menu
-    local height = m.height + (hasActiveInvite and m.bannerSpace or 0)
+    local top = m.contentTop + (hasActiveInvite and m.bannerSpace or 0)
+    local height = top + ContentHeight(menuTab) + m.padding
     local size = vec2(m.width, height) * ShellScale()
     local pos = (vec2(windowWidth, windowHeight) - size) / 2
     ui.transparentWindow("tougeMenuWindow", pos, size, function ()
@@ -402,10 +423,8 @@ local function DrawTougeMenu()
         local mousePos = ui.mouseLocalPos()
         DrawMenuHeader(subtitles[menuTab] or subtitles.challenge, mousePos)
 
-        local top = m.contentTop
         if hasActiveInvite then
             DrawInviteBanner(mousePos)
-            top = top + m.bannerSpace
         end
 
         if menuTab == "profile" then
@@ -436,5 +455,29 @@ local function DrawMenuHint()
         Fill(vec2(0, 0), hint.size, st.fill, radius)
         Outline(vec2(0, 0), hint.size, st.border, radius)
         DrawShellText("I  Touge menu   ·   H  hide", fontSemiBold, hint.fontSize, hint.fontSize, vec2(0, 0), hint.size, st.color)
+    end)
+end
+
+-- Compact Elo card, top-left, shown whenever the Elo is known.
+local function DrawEloCard()
+    if elo == -1 or not showElo then
+        return
+    end
+
+    local l = layout.eloCard
+    local c = layout.as6Panel.card
+    ui.transparentWindow("eloWindow", scaling.size(l.pos), l.size * ShellScale(), function ()
+        local displayElo = math.floor(math.max(elo, 0) + 0.5)
+        VerticalGradient(vec2(0, 0), l.size, c.infoTop, c.infoBottom)
+        Outline(vec2(0, 0), l.size, c.border, c.rounding)
+
+        Fill(l.boxMin, l.boxMax, c.boxFill, 3)
+        Outline(l.boxMin, l.boxMax, c.boxBorder, 3)
+        DrawShellText(tostring(displayElo), fontBold, l.boxFontSize, l.boxFontSize * 0.7, l.boxMin, l.boxMax, c.boxColor)
+
+        DrawShellText(ac.getDriverName(0), fontBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, c.textColor, ui.Alignment.Start)
+        local chipMax = l.chipMin + l.chipSize
+        Fill(l.chipMin, chipMax, GetEloColor(displayElo), 3)
+        DrawShellText("ELO", fontSemiBold, c.chipFontSize, c.chipFontSize, l.chipMin, chipMax, c.chipText)
     end)
 end

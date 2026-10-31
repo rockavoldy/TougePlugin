@@ -93,6 +93,7 @@ local function OnLobbyStatus(message)
             id = message['nearbyId' .. i],
             inRace = message['nearbyInRace' .. i],
             elo = message['nearbyElo' .. i],
+            sessionId = message['nearbySessionId' .. i],
         }
     end
 end
@@ -159,22 +160,27 @@ local lobbyStatusEvent = ac.OnlineEvent({
     nearbyId1 = ac.StructItem.uint64(),
     nearbyInRace1 = ac.StructItem.boolean(),
     nearbyElo1 = ac.StructItem.int32(),
+    nearbySessionId1 = ac.StructItem.int32(),
     nearbyName2 = ac.StructItem.string(),
     nearbyId2 = ac.StructItem.uint64(),
     nearbyInRace2 = ac.StructItem.boolean(),
     nearbyElo2 = ac.StructItem.int32(),
+    nearbySessionId2 = ac.StructItem.int32(),
     nearbyName3 = ac.StructItem.string(),
     nearbyId3 = ac.StructItem.uint64(),
     nearbyInRace3 = ac.StructItem.boolean(),
     nearbyElo3 = ac.StructItem.int32(),
+    nearbySessionId3 = ac.StructItem.int32(),
     nearbyName4 = ac.StructItem.string(),
     nearbyId4 = ac.StructItem.uint64(),
     nearbyInRace4 = ac.StructItem.boolean(),
     nearbyElo4 = ac.StructItem.int32(),
+    nearbySessionId4 = ac.StructItem.int32(),
     nearbyName5 = ac.StructItem.string(),
     nearbyId5 = ac.StructItem.uint64(),
     nearbyInRace5 = ac.StructItem.boolean(),
     nearbyElo5 = ac.StructItem.int32(),
+    nearbySessionId5 = ac.StructItem.int32(),
 }, function (sender, message) OnLobbyStatus(message) end)
 
 -- Sends a client message, unless the mock panel is driving the HUD.

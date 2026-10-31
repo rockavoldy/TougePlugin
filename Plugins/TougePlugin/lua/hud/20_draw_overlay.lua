@@ -51,29 +51,8 @@ local function DrawStandings()
     end)
 end
 
-local function DrawEloRow()
-    local l = layout.eloRow
-    ui.transparentWindow("eloWindow", scaling.size(l.pos), l.size * ShellScale(), function ()
-        local displayElo = math.floor(elo + 0.5)
-        DrawShellSprite(l.image, vec2(0, 0), l.size)
-        -- The Elo colour goes on the label: tinting the chrome digits makes them unreadable
-        -- on the navy band for most colours.
-        DrawShellLabel("ELO", l.label, l.labelFontSize, GetEloColor(displayElo))
-        DrawShellText(ac.getDriverName(0), fontSemiBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, rgbm(1, 1, 1, 1))
-        DrawShellNumber(displayElo, l.digitsCenterX, l.digitsY, l.digitSize)
-    end)
-end
-
 local function DrawElo()
     if elo == -1 or not showElo then
-        return
-    end
-
-    if useIdHud then
-        -- Waits for the digit sprites rather than flashing the old badge first.
-        if idSprites ~= nil then
-            DrawEloRow()
-        end
         return
     end
 

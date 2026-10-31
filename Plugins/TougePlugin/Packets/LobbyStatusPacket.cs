@@ -14,6 +14,9 @@ public class LobbyStatusPacket : OnlineEvent<LobbyStatusPacket>
     public bool NearbyPlayerInRace1;
     [OnlineEventField(Name = "nearbyElo1")]
     public int NearbyPlayerElo1;
+    // Session ID of the car, which is its car index on the client; -1 for an empty slot.
+    [OnlineEventField(Name = "nearbySessionId1")]
+    public int NearbyPlayerSessionId1 = -1;
 
     [OnlineEventField(Name = "nearbyName2", Size = 32)]
     public string NearbyPlayerName2;
@@ -23,6 +26,8 @@ public class LobbyStatusPacket : OnlineEvent<LobbyStatusPacket>
     public bool NearbyPlayerInRace2;
     [OnlineEventField(Name = "nearbyElo2")]
     public int NearbyPlayerElo2;
+    [OnlineEventField(Name = "nearbySessionId2")]
+    public int NearbyPlayerSessionId2 = -1;
 
     [OnlineEventField(Name = "nearbyName3", Size = 32)]
     public string NearbyPlayerName3;
@@ -32,6 +37,8 @@ public class LobbyStatusPacket : OnlineEvent<LobbyStatusPacket>
     public bool NearbyPlayerInRace3;
     [OnlineEventField(Name = "nearbyElo3")]
     public int NearbyPlayerElo3;
+    [OnlineEventField(Name = "nearbySessionId3")]
+    public int NearbyPlayerSessionId3 = -1;
 
     [OnlineEventField(Name = "nearbyName4", Size = 32)]
     public string NearbyPlayerName4;
@@ -41,6 +48,8 @@ public class LobbyStatusPacket : OnlineEvent<LobbyStatusPacket>
     public bool NearbyPlayerInRace4;
     [OnlineEventField(Name = "nearbyElo4")]
     public int NearbyPlayerElo4;
+    [OnlineEventField(Name = "nearbySessionId4")]
+    public int NearbyPlayerSessionId4 = -1;
 
     [OnlineEventField(Name = "nearbyName5", Size = 32)]
     public string NearbyPlayerName5;
@@ -50,4 +59,6 @@ public class LobbyStatusPacket : OnlineEvent<LobbyStatusPacket>
     public bool NearbyPlayerInRace5;
     [OnlineEventField(Name = "nearbyElo5")]
     public int NearbyPlayerElo5;
+    [OnlineEventField(Name = "nearbySessionId5")]
+    public int NearbyPlayerSessionId5 = -1;
 }

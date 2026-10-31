@@ -5,11 +5,12 @@ function script.drawUI(dt)
     windowHeight = sim.windowHeight
 
     DrawStandings()
-    DrawElo()
     if useIdHud then
+        DrawEloCard()
         DrawMenuHint()
         DrawTougeMenu()
     else
+        DrawElo()
         DrawTutorial()
         DrawInviteMenu()
         DrawCourseSelect()
