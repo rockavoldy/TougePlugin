@@ -25,6 +25,8 @@ if debugHud then
             result2 = mockStandings[2],
             result3 = mockStandings[3],
             sessionState = mockHudState,
+            -- Without a second player, the player's own car stands in as the rival.
+            rivalSessionId = mockHudState == HudStates.Off and -1 or car.sessionID,
         })
     end
 
@@ -82,8 +84,10 @@ if debugHud then
     local function ResetMock()
         mockStandings = { RaceResults.Tbd, RaceResults.Tbd, RaceResults.Tbd }
         mockHudState = HudStates.Off
-        OnSessionState({ result1 = 0, result2 = 0, result3 = 0, sessionState = HudStates.Off })
+        OnSessionState({ result1 = 0, result2 = 0, result3 = 0, sessionState = HudStates.Off, rivalSessionId = -1 })
         mockShowForfeit = false
+        mockRaceOverride = false
+        mockGapSeconds = 0
         hasActiveInvite = false
         hasIncomingNotification = false
         isCountdownHudActive = false
@@ -117,6 +121,21 @@ if debugHud then
                 MockSessionState()
             end
         end
+
+        ui.separator()
+        ui.text("Race data")
+        if ui.checkbox("Override gap", mockRaceOverride) then
+            mockRaceOverride = not mockRaceOverride
+            mockActive = true
+        end
+        local gap, gapChanged = ui.slider("##mockGap", mockGapSeconds, -5, 5, "Gap: %.2f s")
+        if gapChanged then
+            mockGapSeconds = gap
+        end
+        ui.text(string.format("Pos %s | %.1f m | %s s | %s (%s) vs %s (%s)",
+            tostring(race.position), race.gapMeters,
+            race.gapSeconds and string.format("%.2f", race.gapSeconds) or "-",
+            race.driverName, race.driverCarName, race.rivalName, race.rivalCarName))
 
         ui.separator()
         ui.text("Elo")

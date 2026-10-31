@@ -6,11 +6,18 @@ local function OnSessionState(message)
     ac.debug('AS_SessionState.result1', message.result1)
     ac.debug('AS_SessionState.result2', message.result2)
     ac.debug('AS_SessionState.result3', message.result3)
+    ac.debug('AS_SessionState.rivalSessionId', message.rivalSessionId)
 
     standings[1] = message.result1
     standings[2] = message.result2
     standings[3] = message.result3
     if message.sessionState ~= HudStates.NoUpdate then currentHudState = message.sessionState end
+
+    if message.rivalSessionId >= 0 then
+        rivalCar = FindCarBySessionId(message.rivalSessionId)
+    else
+        rivalCar = nil
+    end
 end
 
 local function OnElo(message)
@@ -94,7 +101,8 @@ local sessionStateEvent = ac.OnlineEvent(
         result1 = ac.StructItem.int32(),
         result2 = ac.StructItem.int32(),
         result3 = ac.StructItem.int32(),
-        sessionState = ac.StructItem.int32()
+        sessionState = ac.StructItem.int32(),
+        rivalSessionId = ac.StructItem.int32(),
     }, function (sender, message) OnSessionState(message) end)
 
 local eloEvent = ac.OnlineEvent(

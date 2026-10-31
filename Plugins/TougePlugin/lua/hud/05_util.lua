@@ -76,6 +76,16 @@ local function ConsumeClickIn(mousePos, rectMin, rectMax)
     return false
 end
 
+local function FindCarBySessionId(sessionId)
+    for i = 0, sim.carsCount - 1 do
+        local c = ac.getCar(i)
+        if c ~= nil and c.sessionID == sessionId then
+            return c
+        end
+    end
+    return nil
+end
+
 local function checkTimeout(activatedAt, duration)
     if activatedAt ~= nil and os.clock() - activatedAt >= duration then
         return true

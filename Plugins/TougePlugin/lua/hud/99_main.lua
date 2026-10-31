@@ -16,4 +16,5 @@ end
 function script.update(dt)
     InputCheck()
     UpdateTimers(dt)
+    UpdateRace(dt)
 end

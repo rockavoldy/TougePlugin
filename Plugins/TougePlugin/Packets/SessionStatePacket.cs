@@ -13,4 +13,8 @@ public class SessionStatePacket : OnlineEvent<SessionStatePacket>
     public int Result3;
     [OnlineEventField(Name = "sessionState")]
     public int SessionState;
+    // Session id of the opponent's car, or -1 when there is no active session. The client
+    // reads the opponent's name, car and track position from that car.
+    [OnlineEventField(Name = "rivalSessionId")]
+    public int RivalSessionId = -1;
 }

@@ -33,6 +33,7 @@ local isToggleCourse = true
 
 local standings = { 0, 0, 0 }  -- Default, no rounds have been completed.
 local currentHudState = 0
+local rivalCar = nil -- ac.StateCar of the opponent while in a session
 
 local hasTutorialHidden = false
 local isTutorialAutoHidden = false
@@ -56,5 +57,8 @@ local mouseClickHandled = false
 -- Set by the mock panel. While mockActive is true nothing is sent to the server.
 local mockActive = false
 local mockShowForfeit = false
+-- When set, the race tracker reports mockGapSeconds instead of measuring the cars.
+local mockRaceOverride = false
+local mockGapSeconds = 0
 
 local car = ac.getCar(0)
