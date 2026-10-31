@@ -2,7 +2,7 @@
 
 local function DrawStandings()
     -- Replaced by the round results in the Initial D cluster.
-    if useIdCluster or currentHudState == HudStates.Off then
+    if useIdHud or currentHudState == HudStates.Off then
         return
     end
 
@@ -51,8 +51,27 @@ local function DrawStandings()
     end)
 end
 
+local function DrawEloRow()
+    local l = layout.eloRow
+    ui.transparentWindow("eloWindow", scaling.size(l.pos), l.size * ShellScale(), function ()
+        local displayElo = math.floor(elo + 0.5)
+        DrawShellSprite(l.image, vec2(0, 0), l.size)
+        DrawShellLabel("ELO", l.label, l.labelFontSize, l.labelColor)
+        DrawShellText(ac.getDriverName(0), fontSemiBold, l.nameFontSize, l.nameMinFontSize, l.nameMin, l.nameMax, rgbm(1, 1, 1, 1))
+        DrawShellNumber(displayElo, l.digitsCenterX, l.digitsY, l.digitSize, GetEloColor(displayElo))
+    end)
+end
+
 local function DrawElo()
     if elo == -1 or not showElo then
+        return
+    end
+
+    if useIdHud then
+        -- Waits for the digit sprites rather than flashing the old badge first.
+        if idSprites ~= nil then
+            DrawEloRow()
+        end
         return
     end
 

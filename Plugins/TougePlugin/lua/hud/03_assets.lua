@@ -11,6 +11,8 @@ local assets = {
         key = baseUrl .. "Key.png",
         toggle = baseUrl .. "Toggle.png",
         idNameExtended = baseUrl .. "id/name_background_extended.png?v=1",
+        -- name_background.png without its baked-in labels (tools/blank_name_shell.py).
+        idNameBlank = baseUrl .. "id/name_background_blank.png?v=1",
         idAdvantage = baseUrl .. "id/advantage_background.png?v=1",
     },
     avatars = baseUrl .. "avatars/",

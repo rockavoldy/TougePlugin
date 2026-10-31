@@ -122,12 +122,32 @@ local layout = {
         fontSize = 96,
     },
 
+    -- Initial D elements are laid out in the shells' native pixels; shellScale converts
+    -- them to reference pixels so the shells are drawn 1:1 at 1080p (see 06_shell.lua).
+    shellScale = 1440 / 1080,
+
+    -- Elo on the label-less name shell: label tab, player name in the header strip and the
+    -- Elo number as chrome digits in the band.
+    eloRow = {
+        image = assets.images.idNameBlank,
+        pos = vec2(50, 50), -- reference pixels from the top-left of the screen
+        size = vec2(500, 70),
+        label = vec2(38, 1),
+        labelFontSize = 13,
+        labelColor = rgbm(0.44, 0.65, 0.87, 1), -- the shells' "DRIVER" blue
+        nameMin = vec2(100, 3),
+        nameMax = vec2(420, 39),
+        nameFontSize = 26,
+        nameMinFontSize = 20,
+        digitsCenterX = 250,
+        digitsY = 41,
+        digitSize = vec2(23, 26), -- position digits scaled to the band
+    },
+
     -- Initial D in-race cluster, anchored top-right: the advantage shell, the Driver vs Rival
-    -- shell below it, and the round results under that. Values inside the cluster are in the
-    -- shells' native pixels (positions from the D Extra app's D6 config), and shellScale
-    -- converts them to reference pixels so the shells are drawn 1:1 at 1080p.
+    -- shell below it, and the round results under that. Positions are from the D Extra
+    -- app's D6 config.
     cluster = {
-        shellScale = 1440 / 1080,
         marginRight = 50, -- reference pixels
         marginTop = 50,
         size = vec2(552, 298),

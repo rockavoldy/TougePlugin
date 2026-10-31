@@ -1,33 +1,5 @@
 -- Initial D in-race cluster: advantage number, Driver vs Rival names and the round results.
--- Coordinates are shell pixels (see layout.cluster); ClusterScale converts them to screen.
-
-local function ClusterScale()
-    return scaling.get() * layout.cluster.shellScale
-end
-
--- Draws a sprite with its top-left corner at shell position pos (window units).
-local function DrawSprite(image, pos, size, color, uvMax)
-    local s = ClusterScale()
-    local p1 = pos * s
-    ui.drawImage(image, p1, p1 + size * s, color or rgbm(1, 1, 1, 1), vec2(0, 0), uvMax or vec2(1, 1))
-end
-
--- Draws text centered in a shell rectangle, shrunk to fit its width but not below
--- minFontSize. Text that still does not fit is left-aligned and cut off at the rectangle.
-local function DrawFittedText(text, textFont, fontSize, minFontSize, rectMin, rectMax, color)
-    local shellScale = layout.cluster.shellScale
-    local width = rectMax.x - rectMin.x
-    local fitted = FindFontSize(text, fontSize * shellScale, textFont, width * shellScale)
-    fitted = math.max(fitted, minFontSize * shellScale)
-    local s = ClusterScale()
-
-    ui.pushDWriteFont(textFont)
-    local overflows = ui.measureDWriteText(text, scaling.size(fitted)).x > width * s
-    local alignment = overflows and ui.Alignment.Start or ui.Alignment.Center
-    ui.dwriteDrawTextClipped(text, scaling.size(fitted), rectMin * s, rectMax * s,
-        alignment, ui.Alignment.Center, false, color)
-    ui.popDWriteFont()
-end
+-- Coordinates are shell pixels (see layout.cluster and 06_shell.lua).
 
 local function AdvantageColor(gapSeconds)
     if gapSeconds >= 0 then
@@ -40,7 +12,7 @@ end
 
 local function DrawAdvantage()
     local a = layout.cluster.advantage
-    DrawSprite(a.image, a.pos, a.size)
+    DrawShellSprite(a.image, a.pos, a.size)
 
     local gap = race.gapSeconds
     local pointSlot = a.pos + a.point
@@ -54,10 +26,10 @@ local function DrawAdvantage()
     if gap == nil then
         -- Unknown gap: "--.--"
         for i = 1, 2 do
-            DrawSprite(idSprites.minus, IntegerSlot(i), a.integerSize, a.unknownColor)
-            DrawSprite(idSprites.minus, DecimalSlot(i), a.decimalSize, a.unknownColor)
+            DrawShellSprite(idSprites.minus, IntegerSlot(i), a.integerSize, a.unknownColor)
+            DrawShellSprite(idSprites.minus, DecimalSlot(i), a.decimalSize, a.unknownColor)
         end
-        DrawSprite(idSprites.pointM, pointSlot, a.pointSize, a.unknownColor, a.pointUvMax)
+        DrawShellSprite(idSprites.pointM, pointSlot, a.pointSize, a.unknownColor, a.pointUvMax)
         return
     end
 
@@ -67,13 +39,13 @@ local function DrawAdvantage()
 
     for i = 1, #whole do
         local digit = tonumber(whole:sub(-i, -i))
-        DrawSprite(idSprites.digits[digit], IntegerSlot(i), a.integerSize, color)
+        DrawShellSprite(idSprites.digits[digit], IntegerSlot(i), a.integerSize, color)
     end
-    DrawSprite(gap >= 0 and idSprites.plus or idSprites.minus, IntegerSlot(#whole + 1), a.integerSize, color)
+    DrawShellSprite(gap >= 0 and idSprites.plus or idSprites.minus, IntegerSlot(#whole + 1), a.integerSize, color)
 
-    DrawSprite(idSprites.pointM, pointSlot, a.pointSize, color, a.pointUvMax)
+    DrawShellSprite(idSprites.pointM, pointSlot, a.pointSize, color, a.pointUvMax)
     for i = 1, 2 do
-        DrawSprite(idSprites.digits[tonumber(decimals:sub(i, i))], DecimalSlot(i), a.decimalSize, color)
+        DrawShellSprite(idSprites.digits[tonumber(decimals:sub(i, i))], DecimalSlot(i), a.decimalSize, color)
     end
 end
 
@@ -82,19 +54,19 @@ local function DrawNameRow(rowOffset, name, carName, position, carColor)
     local origin = n.pos + vec2(0, rowOffset)
 
     if name ~= "" then
-        DrawFittedText(name, fontSemiBold, n.nameFontSize, n.nameMinFontSize, origin + n.nameMin, origin + n.nameMax, rgbm(1, 1, 1, 1))
+        DrawShellText(name, fontSemiBold, n.nameFontSize, n.nameMinFontSize, origin + n.nameMin, origin + n.nameMax, rgbm(1, 1, 1, 1))
     end
     if carName ~= "" then
-        DrawFittedText(carName, font, n.carFontSize, n.carMinFontSize, origin + n.carMin, origin + n.carMax, carColor)
+        DrawShellText(carName, font, n.carFontSize, n.carMinFontSize, origin + n.carMin, origin + n.carMax, carColor)
     end
 
     local digit = position and idSprites.positionDigits[position] or idSprites.positionDash
-    DrawSprite(digit, origin + n.position, n.positionSize)
+    DrawShellSprite(digit, origin + n.position, n.positionSize)
 end
 
 local function DrawNames()
     local n = layout.cluster.names
-    DrawSprite(n.image, n.pos, n.size)
+    DrawShellSprite(n.image, n.pos, n.size)
 
     local rivalPosition = race.position and (3 - race.position) or nil
     DrawNameRow(0, race.driverName, race.driverCarName, race.position, n.driverCarColor)
@@ -103,7 +75,7 @@ end
 
 local function DrawRounds()
     local r = layout.cluster.rounds
-    local s = ClusterScale()
+    local s = ShellScale()
 
     local label = "ROUNDS"
     if currentHudState == HudStates.SuddenDeath then
@@ -113,7 +85,7 @@ local function DrawRounds()
         label = standings[3] == RaceResults.Win and "YOU WIN" or "YOU LOSE"
     end
     ui.pushDWriteFont(fontSemiBold)
-    ui.dwriteDrawText(label, scaling.size(r.labelFontSize * layout.cluster.shellScale), r.label * s, r.labelColor)
+    ui.dwriteDrawText(label, scaling.size(r.labelFontSize * layout.shellScale), r.label * s, r.labelColor)
     ui.popDWriteFont()
 
     local pips = currentHudState == HudStates.FirstTwo and 2 or 3
@@ -138,12 +110,12 @@ local function DrawRounds()
 end
 
 local function DrawCluster()
-    if not useIdCluster or currentHudState == HudStates.Off or idSprites == nil then
+    if not useIdHud or currentHudState == HudStates.Off or idSprites == nil then
         return
     end
 
     local c = layout.cluster
-    local size = c.size * ClusterScale()
+    local size = c.size * ShellScale()
     local pos = vec2(windowWidth - scaling.size(c.marginRight) - size.x, scaling.size(c.marginTop))
     ui.transparentWindow("idClusterWindow", pos, size, function ()
         DrawAdvantage()
