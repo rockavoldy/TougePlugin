@@ -36,9 +36,6 @@ local layout = {
             popupSlide = 60, -- popups slide in from the right
             countdown = 0.3,
             countdownPop = 1.3, -- each countdown step starts this much larger
-            -- Colour of the shade an element is drawn through while it fades; dark so a fading
-            -- element does not flash a bright pane.
-            fadeTint = rgbm(0.1, 0.12, 0.16, 1),
         },
 
         -- Corner radii, shared by every shape so the corners match: the window, cards and

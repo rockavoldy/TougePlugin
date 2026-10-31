@@ -7,12 +7,12 @@ local radii = layout.as6Panel.radius
 
 local function Fill(min, max, color, rounding, corners)
     local s = ShellScale()
-    ui.drawRectFilled(min * s, max * s, color, (rounding or 0) * s, corners or ui.CornerFlags.All)
+    ui.drawRectFilled(min * s, max * s, Faded(color), (rounding or 0) * s, corners or ui.CornerFlags.All)
 end
 
 local function Outline(min, max, color, rounding, thickness)
     local s = ShellScale()
-    ui.drawRect(min * s, max * s, color, (rounding or 0) * s, ui.CornerFlags.All, (thickness or 1) * s)
+    ui.drawRect(min * s, max * s, Faded(color), (rounding or 0) * s, ui.CornerFlags.All, (thickness or 1) * s)
 end
 
 -- Gradient fill with rounded corners: a rounded base in the bottom colour, a rounded cap in
@@ -21,13 +21,13 @@ local function VerticalGradient(min, max, top, bottom, rounding, topOnly)
     local s = ShellScale()
     local r = math.min(rounding or 0, (max.y - min.y) / 2)
     if r <= 0 then
-        ui.drawRectFilledMultiColor(min * s, max * s, top, top, bottom, bottom)
+        ui.drawRectFilledMultiColor(min * s, max * s, Faded(top), Faded(top), Faded(bottom), Faded(bottom))
         return
     end
     Fill(min, max, bottom, r, topOnly and ui.CornerFlags.Top or ui.CornerFlags.All)
     Fill(min, vec2(max.x, min.y + 2 * r), top, r, ui.CornerFlags.Top)
     local gradientMax = topOnly and max or vec2(max.x, max.y - r)
-    ui.drawRectFilledMultiColor(vec2(min.x, min.y + r) * s, gradientMax * s, top, top, bottom, bottom)
+    ui.drawRectFilledMultiColor(vec2(min.x, min.y + r) * s, gradientMax * s, Faded(top), Faded(top), Faded(bottom), Faded(bottom))
 end
 
 -- Text centered in a shape, kept inset from its sides.
@@ -41,7 +41,7 @@ local function DrawParagraph(text, textFont, fontSize, min, max, color)
     local s = ShellScale()
     ui.pushDWriteFont(textFont)
     ui.dwriteDrawTextClipped(text, scaling.size(fontSize * layout.shellScale), min * s, max * s,
-        ui.Alignment.Start, ui.Alignment.Start, true, color)
+        ui.Alignment.Start, ui.Alignment.Start, true, Faded(color))
     ui.popDWriteFont()
 end
 
@@ -68,11 +68,11 @@ local function DrawAs6Backdrop(windowPos, size)
     if ui.isImageReady('dynamic::screen') then
         local screen = vec2(sim.windowWidth, sim.windowHeight)
         ui.beginBlurring()
-        ui.drawImage('dynamic::screen', vec2(0, 0), size, rgbm(1, 1, 1, 1), windowPos / screen, (windowPos + size) / screen)
+        ui.drawImage('dynamic::screen', vec2(0, 0), size, Faded(), windowPos / screen, (windowPos + size) / screen)
         ui.endBlurring(b.blur * s)
     end
-    ui.drawRectFilled(vec2(0, 0), size, b.tint, radii.window * s)
-    ui.drawRect(vec2(0, 0), size, b.border, radii.window * s)
+    ui.drawRectFilled(vec2(0, 0), size, Faded(b.tint), radii.window * s)
+    ui.drawRect(vec2(0, 0), size, Faded(b.border), radii.window * s)
 end
 
 -- Gold gradient button; returns true when clicked.
@@ -141,7 +141,7 @@ local function DrawAs6Card(pos, width, mousePos, content, selected)
         local sc = ShellScale()
         local imageMin = pos + c.image
         local imageMax = imageMin + c.imageSize
-        ui.drawImageRounded(content.image, imageMin * sc, imageMax * sc, rgbm(1, 1, 1, content.busy and 0.5 or 1),
+        ui.drawImageRounded(content.image, imageMin * sc, imageMax * sc, Faded(rgbm(1, 1, 1, content.busy and 0.5 or 1)),
             c.imageUvMin, c.imageUvMax, radii.chip * sc)
         Outline(imageMin, imageMax, c.imageBorder, radii.chip)
         textLeft = textLeft + c.imageShift
@@ -444,8 +444,8 @@ local function DrawSettingsTab(top, mousePos)
         end
     end
     local knob = vec2(trackMin.x + width * volume, (trackMin.y + trackMax.y) / 2) * s
-    ui.drawCircleFilled(knob, st.knobRadius * s, active and card.textColor or card.busyColor, 24)
-    ui.drawCircle(knob, st.knobRadius * s, card.hover, 24, (isDraggingVolume and 2 or 1) * s)
+    ui.drawCircleFilled(knob, st.knobRadius * s, Faded(active and card.textColor or card.busyColor), 24)
+    ui.drawCircle(knob, st.knobRadius * s, Faded(card.hover), 24, (isDraggingVolume and 2 or 1) * s)
 
     DrawShellText(string.format("%d%%", math.floor(volume * 100 + 0.5)), fontBold, st.labelFontSize, st.labelFontSize,
         vec2(trackMax.x, min.y), max - vec2(st.labelX, 0), active and card.textColor or card.busyColor, ui.Alignment.End)
@@ -530,7 +530,7 @@ local function DrawTougeMenu()
     local size = vec2(m.width, height) * s
     local pos = (vec2(windowWidth, windowHeight) - size) / 2 + vec2(0, (1 - shown) * motion.menuSlide * s)
     ui.transparentWindow("tougeMenuWindow", pos, size, function ()
-        DrawFaded(shown, size, function ()
+        DrawFaded(shown, function ()
             DrawAs6Backdrop(pos, size)
             -- A closing menu no longer reacts to the mouse.
             local mousePos = hasInviteMenuOpen and ui.mouseLocalPos() or vec2(-1e6, -1e6)
@@ -567,7 +567,7 @@ local function DrawMenuHint()
     local size = hint.size * ShellScale()
     local pos = vec2(scaling.size(hint.marginLeft), windowHeight - scaling.size(hint.marginBottom) - size.y)
     ui.transparentWindow("tougeMenuHint", pos, size, function ()
-        DrawFaded(shown, size, function ()
+        DrawFaded(shown, function ()
             local radius = hint.size.y / 2
             Fill(vec2(0, 0), hint.size, st.fill, radius)
             Outline(vec2(0, 0), hint.size, st.border, radius)
@@ -603,6 +603,6 @@ local function DrawEloCard()
 
     local size = layout.eloCard.size * ShellScale()
     ui.transparentWindow("eloWindow", scaling.size(layout.eloCard.pos), size, function ()
-        DrawFaded(shown, size, DrawEloCardContent)
+        DrawFaded(shown, DrawEloCardContent)
     end)
 end

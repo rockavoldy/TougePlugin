@@ -33,7 +33,7 @@ local function DrawMessageText(text, textFont, min, max, color)
     local p = layout.as6Panel.menu.popup
     ui.pushDWriteFont(textFont)
     ui.dwriteDrawTextClipped(text, scaling.size(p.fontSize * layout.shellScale), min * s, max * s,
-        ui.Alignment.Start, ui.Alignment.Center, true, color)
+        ui.Alignment.Start, ui.Alignment.Center, true, Faded(color))
     ui.popDWriteFont()
 end
 
@@ -91,7 +91,7 @@ local function DrawPopups()
         local size = vec2(p.width, height) * s
         local pos = vec2(right - size.x + (1 - shown) * motion.popupSlide * s, bottom - size.y)
         ui.transparentWindow(name, pos, size, function ()
-            DrawFaded(shown, size, draw)
+            DrawFaded(shown, draw)
         end)
         bottom = bottom - (size.y + p.gap * s) * shown
     end
@@ -135,12 +135,12 @@ local function DrawCountdown()
         color = c.setColor
     end
     ui.transparentWindow("countdownWindow", pos, size, function ()
-        DrawFaded(shown, size, function ()
+        DrawFaded(shown, function ()
             local textPos = (size - textSize) / 2
             ui.beginScale()
             ui.pushDWriteFont(fontBold)
-            ui.dwriteDrawText(countdownHudMessage, fontSize, textPos + vec2(c.shadowOffset, c.shadowOffset) * s, c.shadowColor)
-            ui.dwriteDrawText(countdownHudMessage, fontSize, textPos, color)
+            ui.dwriteDrawText(countdownHudMessage, fontSize, textPos + vec2(c.shadowOffset, c.shadowOffset) * s, Faded(c.shadowColor))
+            ui.dwriteDrawText(countdownHudMessage, fontSize, textPos, Faded(color))
             ui.popDWriteFont()
             ui.endScale(motion.countdownPop + (1 - motion.countdownPop) * pop)
         end)

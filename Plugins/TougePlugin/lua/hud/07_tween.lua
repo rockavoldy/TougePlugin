@@ -25,19 +25,9 @@ local function RestartTween(name)
     tweenValues[name] = 0
 end
 
--- Calls draw, multiplying the alpha of everything it draws by alpha and shading it from
--- motion.fadeTint towards white while it fades. size is the size of the current window
--- (window units).
-local function DrawFaded(alpha, size, draw)
-    if alpha >= 1 then
-        draw()
-        return
-    end
-    ui.beginGradientShade()
+-- Calls draw with every colour drawn through the helpers at the given opacity (0 to 1).
+local function DrawFaded(alpha, draw)
+    fadeAlpha = math.max(0, math.min(1, alpha))
     draw()
-    -- The tint eases to white as alpha reaches 1, so the end of a fade matches the
-    -- unshaded drawing.
-    local tint = layout.as6Panel.motion.fadeTint
-    local shade = rgbm(tint.r + (1 - tint.r) * alpha, tint.g + (1 - tint.g) * alpha, tint.b + (1 - tint.b) * alpha, alpha)
-    ui.endGradientShade(vec2(0, 0), size, shade, shade, true)
+    fadeAlpha = 1
 end
