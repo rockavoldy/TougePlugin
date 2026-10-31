@@ -69,11 +69,12 @@ local function OnInitialization(message)
 
     showRaceTypeToggle = message.showRaceTypeToggle
 
+    -- Discrete mode hides the Elo card (it shows for a while after the Elo changes) and the
+    -- menu hint. Set both either way, so leaving discrete mode brings them back.
     discreteMode = message.discreteMode
-    if discreteMode then
-        showElo = false
-        hasTutorialHidden = true
-    end
+    showElo = not discreteMode
+    hasTutorialHidden = discreteMode
+    eloShownAt = nil
 
     elo = message.elo - 100
     targetElo = message.elo

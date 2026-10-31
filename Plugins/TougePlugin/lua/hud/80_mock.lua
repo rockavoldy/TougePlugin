@@ -150,7 +150,7 @@ if debugHud then
 
         ui.separator()
         ui.text("Initialization (Elo counts up from 100 below)")
-        if ui.checkbox("Discrete mode", mockDiscrete) then mockDiscrete = not mockDiscrete end
+        if ui.checkbox("Discrete mode (hides the Elo card and menu hint)", mockDiscrete) then mockDiscrete = not mockDiscrete end
         if ui.checkbox("Race type toggle", mockToggle) then mockToggle = not mockToggle end
         if ui.checkbox("8 courses", mockManyCourses) then mockManyCourses = not mockManyCourses end
         if ui.button("Send initialization") then MockInitialization() end
