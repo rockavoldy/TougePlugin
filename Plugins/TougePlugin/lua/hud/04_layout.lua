@@ -323,7 +323,7 @@ local layout = {
             },
 
             howto = {
-                bodyHeight = 132,
+                bodyHeight = 150,
                 bodyPadding = 16,
                 bodyFontSize = 17,
                 keysGap = 20, -- between the body and the key rows
@@ -332,6 +332,31 @@ local layout = {
                 keyRowStep = 58,
                 keyFontSize = 22,
                 keyLabelFontSize = 16,
+            },
+
+            -- Bottom-right popups (invite, notification, forfeit), stacked upwards in that
+            -- order. The invite popup is a menu card.
+            popup = {
+                marginRight = 50, -- reference pixels
+                marginBottom = 50,
+                width = 440,
+                gap = 10,
+                messageHeight = 64,
+                accent = { x = 10, width = 4, inset = 12 }, -- gold bar on the left edge
+                textLeft = 26,
+                fontSize = 16,
+                barHeight = 8, -- forfeit hold progress
+                barBottom = 14,
+            },
+
+            -- Countdown text centered on the screen on a frosted plate.
+            countdown = {
+                height = 110,
+                paddingX = 56,
+                fontSize = 72,
+                readyColor = rgbm(0.95, 0.96, 0.98, 1),
+                setColor = rgbm(1, 0.85, 0.4, 1),
+                goColor = rgbm(0.3, 0.8, 0.42, 1),
             },
 
             hint = { -- shown instead of the tutorial panel while the menu is closed

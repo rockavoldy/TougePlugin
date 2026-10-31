@@ -16,8 +16,13 @@ function script.drawUI(dt)
         DrawCourseSelect()
     end
     DrawCluster()
-    DrawCountdown()
-    DrawPopups()
+    if useIdHud then
+        DrawAs6Countdown()
+        DrawAs6Popups()
+    else
+        DrawCountdown()
+        DrawPopups()
+    end
 end
 
 function script.update(dt)
