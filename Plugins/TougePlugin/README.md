@@ -13,14 +13,49 @@ A plugin for Assetto Corsa servers for **touge** racing with an elo system. Desi
 ---
 ## Installation
 
-- **Download the plugin**  
-    _(Download link will be added here soon)_
+Download the latest release from
+[rockavoldy/TougePlugin releases](https://github.com/rockavoldy/TougePlugin/releases). There are two
+shapes, both built per platform (`linux-x64`, `linux-arm64`, `win-x64`):
+
+### Full server bundle
+
+Download `<tag>-<rid>` (`.tar.gz` for Linux, `.zip` for Windows), extract it, and run
+`AssettoServer`. The archive contains the published AssettoServer plus the standard plugins and
+`plugins/TougePlugin`. `ReplayPlugin` is not included because it is marked non-buildable in
+`AssettoServer.slnx`.
+
+### Existing server
+
+Download `TougePlugin-<tag>-<rid>`, then:
+
 - **Extract it**  
-    Place the contents into your server's `plugins` directory.
+    Place the contents into your server's `plugins` directory so the result is
+    `plugins/TougePlugin`.
 - **Run your server once**  
     This will generate configuration files inside the `cfg` folder.
 - **Customize your ruleset**  
     Edit the generated `plugin_touge_cfg.yml` and `touge_course_setup.yml` to adjust setting to your liking.
+
+The plugin-only archive is platform-specific: it must match your server's operating system and
+architecture, and your AssettoServer must be a compatible revision (see [Notes](#notes)).
+
+---
+
+## Building
+
+Requires the .NET 11 SDK.
+
+```bash
+# Debug: builds TougePlugin + AssettoServer/Shared, copies into the server tree
+dotnet build Plugins/TougePlugin/TougePlugin.csproj -c Debug
+
+# Full server bundle (server + all built plugins, including TougePlugin)
+dotnet publish --runtime linux-x64 -c Release
+
+# Plugin-only publish
+dotnet publish Plugins/TougePlugin/TougePlugin.csproj -c Release -r linux-x64
+# -> out-linux-x64/plugins/TougePlugin/
+```
 
 ---
 

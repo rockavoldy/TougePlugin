@@ -47,7 +47,7 @@ public class Race
     private readonly int _raceId = System.Threading.Interlocked.Increment(ref _raceIdCounter);
 
     private const int LivenessPollIntervalMs = 250;
-    private const int MaxLivenessMisses = 3;
+    private const int MaxLivenessMisses = 10;
     private const int UnresponsivePongThresholdMs = 4000;
 
     public delegate Race Factory(EntryCar leader, EntryCar follower, IRaceType raceType, Course course);
