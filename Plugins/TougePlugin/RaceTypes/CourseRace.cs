@@ -7,6 +7,8 @@ public class CourseRace : IRaceType
 {
     public async Task<RaceResult> RunRaceAsync(Race race)
     {
+        // Only entered after Go: the finish-line subscription / LookForFinish packet below is
+        // created here, so no course timer can start before the countdown finishes.
         bool leaderSubscribed = false;
         bool followerSubscribed = false;
 

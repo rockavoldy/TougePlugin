@@ -181,7 +181,7 @@ defined in `touge_course_setup.yml`. When `false`, every course must define a `F
 **Type:** `int` (seconds)  
 **Default:** `120`  
 **Description:** In **outrun races**, the leader also wins if they hold the lead for this long.
-Must be a positive integer.
+The timer starts when "Go!" is announced. Must be a positive integer.
 
 ##### `OutrunLeadDistance`
 **Type:** `int` (meters)  
