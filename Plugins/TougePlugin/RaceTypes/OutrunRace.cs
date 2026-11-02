@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using AssettoServer.Network.Tcp;
 using AssettoServer.Server;
+using Serilog;
 using TougePlugin.Models;
 
 namespace TougePlugin.RaceTypes;
@@ -15,11 +16,20 @@ public class OutrunRace : IRaceType
 
     public async Task<RaceResult> RunRaceAsync(Race race)
     {
+        if (!race.HasStarted)
+        {
+            Log.Error("[TougeRace] OutrunRace entered before the race started; aborting");
+            return RaceResult.Error();
+        }
+
         OutrunLeader = race.Leader;
         OutrunChaser = race.Follower;
 
         LastLeaderPosition = OutrunLeader.Status.Position;
-        LastOvertakeTime = race.SessionManager.ServerTimeMilliseconds;
+        LastOvertakeTime = race.StartedAtMilliseconds;
+
+        Log.Debug("[TougeRace] OutrunRace started with lead timeout seeded at {StartedAtMs} ({LeadTimeoutMs} ms)",
+            LastOvertakeTime, race.Configuration.OutrunLeadTimeout * 1000);
 
         while (true)
         {

@@ -40,6 +40,16 @@ public class Race
     private bool IsGo = false;
     private volatile bool _cancelled;
 
+    private volatile bool _hasStarted;
+
+    // True once the Go dispatch has been awaited for both clients. Race types use this to
+    // avoid starting their own timers before the countdown has actually reached the players.
+    public bool HasStarted => _hasStarted;
+
+    // Authoritative race clock start, stamped right after the Go dispatch. Only meaningful
+    // when HasStarted is true; always written before HasStarted is set.
+    public long StartedAtMilliseconds { get; private set; }
+
     private readonly IRaceType _raceType;
     private readonly Course _course;
 
@@ -47,7 +57,7 @@ public class Race
     private readonly int _raceId = System.Threading.Interlocked.Increment(ref _raceIdCounter);
 
     private const int LivenessPollIntervalMs = 250;
-    private const int MaxLivenessMisses = 3;
+    private const int MaxLivenessMisses = 10;
     private const int UnresponsivePongThresholdMs = 4000;
 
     public delegate Race Factory(EntryCar leader, EntryCar follower, IRaceType raceType, Course course);
@@ -226,8 +236,14 @@ public class Race
                             break;
                         }
                     }
-                    _ = SendTimedMessageAsync("Go!", true);
-                    Log.Information("[TougeRace {RaceId}] Countdown reached Go", _raceId);
+                    // Dispatch "Go!" to both clients (ping-staggered) before the race clock starts.
+                    if (await WaitWithForfeitAsync(SendTimedMessageAsync("Go!", true)))
+                        return RaceResult.Disconnected(Forfeit.Task.Result.EntryCar);
+
+                    StartedAtMilliseconds = SessionManager.ServerTimeMilliseconds;
+                    _hasStarted = true;
+                    Log.Information("[TougeRace {RaceId}] Countdown reached Go. Race clock started at {StartedAtMs}",
+                        _raceId, StartedAtMilliseconds);
                     IsGo = true;
                     break;
                 }

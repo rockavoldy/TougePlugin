@@ -301,9 +301,13 @@ Loop through three signal stages ("Ready…", "Set…", "Go!"), 1 s apart. Each 
   - leader moved → follower wins immediately.
 - **Rolling start**: at the "Go!" stage, `IsValidRollingStartPos` requires the cars to be
   within 30 m of each other; otherwise restart.
-- At "Go!": set `IsGo = true`.
+- At "Go!": the staggered `"Go!"` dispatch is **awaited** (see below) and only then are
+  `Race.StartedAtMilliseconds` and `Race.HasStarted` set, followed by `IsGo = true`. Race types
+  therefore cannot start their own timers before both clients have been told to go.
 - Messages use `SendTimedMessageAsync` (sends to the higher-ping player first, delays by the
-  ping difference) to keep the countdown fair across both screens.
+  ping difference) to keep the countdown fair across both screens. All countdown stages except
+  `"Go!"` are fire-and-forget; `"Go!"` is awaited so the race clock starts after the slower
+  client has been notified.
 
 ### 7.3 Lap / finish events
 
@@ -372,7 +376,10 @@ Loop every 250 ms:
    lead timer.
 3. **Teleport check** — if the leader's position jumps > 200 m in one tick, the chaser wins.
 4. **Distance win** — leader ahead by `OutrunLeadDistance` → leader wins.
-5. **Timeout win** — leader held the lead for `OutrunLeadTimeout` seconds → leader wins.
+5. **Timeout win** — leader held the lead for `OutrunLeadTimeout` seconds → leader wins. The
+   timer is seeded from `Race.StartedAtMilliseconds` (stamped post-Go), not from a clock read
+   on entry, so it always starts after both clients were told "Go!". `RunRaceAsync` refuses to
+   run when `Race.HasStarted` is false and returns `RaceResult.Error()`.
 6. Forfeit check → `Disconnected`.
 
 ---
