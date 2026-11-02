@@ -62,9 +62,9 @@ jobs:
           set -euo pipefail
 
           # Server bundle (existing names, now with TougePlugin already inside plugins/)
-          tar -czf "${GITHUB_REF_NAME}-linux-x64.tar.gz" -C out-linux-x64 .
-          tar -czf "${GITHUB_REF_NAME}-linux-arm64.tar.gz" -C out-linux-arm64 .
-          (cd out-win-x64 && zip -qr "../${GITHUB_REF_NAME}-win-x64.zip" .)
+          tar -czf "AssettoServer-${GITHUB_REF_NAME}-linux-x64.tar.gz" -C out-linux-x64 .
+          tar -czf "AssettoServer-${GITHUB_REF_NAME}-linux-arm64.tar.gz" -C out-linux-arm64 .
+          (cd out-win-x64 && zip -qr "../AssettoServer-${GITHUB_REF_NAME}-win-x64.zip" .)
 
           # Standalone plugin (archive root is TougePlugin/)
           tar -czf "TougePlugin-${GITHUB_REF_NAME}-linux-x64.tar.gz" -C out-linux-x64/plugins TougePlugin
@@ -74,9 +74,9 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
-            ${{ github.ref_name }}-linux-x64.tar.gz
-            ${{ github.ref_name }}-linux-arm64.tar.gz
-            ${{ github.ref_name }}-win-x64.zip
+            AssettoServer-${{ github.ref_name }}-linux-x64.tar.gz
+            AssettoServer-${{ github.ref_name }}-linux-arm64.tar.gz
+            AssettoServer-${{ github.ref_name }}-win-x64.zip
             TougePlugin-${{ github.ref_name }}-linux-x64.tar.gz
             TougePlugin-${{ github.ref_name }}-linux-arm64.tar.gz
             TougePlugin-${{ github.ref_name }}-win-x64.zip
@@ -87,9 +87,9 @@ jobs:
           prerelease: true
           draft: true
           files: |
-            ${{ github.ref_name }}-linux-x64.tar.gz
-            ${{ github.ref_name }}-linux-arm64.tar.gz
-            ${{ github.ref_name }}-win-x64.zip
+            AssettoServer-${{ github.ref_name }}-linux-x64.tar.gz
+            AssettoServer-${{ github.ref_name }}-linux-arm64.tar.gz
+            AssettoServer-${{ github.ref_name }}-win-x64.zip
             TougePlugin-${{ github.ref_name }}-linux-x64.tar.gz
             TougePlugin-${{ github.ref_name }}-linux-arm64.tar.gz
             TougePlugin-${{ github.ref_name }}-win-x64.zip
@@ -99,9 +99,9 @@ jobs:
           name: ${{ github.ref_name }}
           prerelease: true
           files: |
-            ${{ github.ref_name }}-linux-x64.tar.gz
-            ${{ github.ref_name }}-linux-arm64.tar.gz
-            ${{ github.ref_name }}-win-x64.zip
+            AssettoServer-${{ github.ref_name }}-linux-x64.tar.gz
+            AssettoServer-${{ github.ref_name }}-linux-arm64.tar.gz
+            AssettoServer-${{ github.ref_name }}-win-x64.zip
             TougePlugin-${{ github.ref_name }}-linux-x64.tar.gz
             TougePlugin-${{ github.ref_name }}-linux-arm64.tar.gz
             TougePlugin-${{ github.ref_name }}-win-x64.zip
