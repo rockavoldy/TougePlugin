@@ -57,7 +57,8 @@ public class LiveWeatherProvider : BackgroundService
                 weatherType.TemperatureCoefficient),
             Pressure = response.Pressure,
             Humidity = response.Humidity / 100.0f,
-            WindSpeed = response.WindSpeed,
+            // OpenWeatherMap reports wind speed in m/s, WeatherData and CSP conditions expect km/h
+            WindSpeed = response.WindSpeed * 3.6f,
             WindDirection = response.WindDirection,
             RainIntensity = last.RainIntensity,
             RainWetness = last.RainWetness,

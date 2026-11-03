@@ -18,7 +18,8 @@ public class WeatherModule : Module
     {
         if (_configuration.Extra.EnableWeatherFx)
         {
-            builder.RegisterType<WeatherFxV1Implementation>().As<IWeatherImplementation>().SingleInstance();
+            builder.RegisterType<WeatherTransportOptions>().AsSelf().SingleInstance();
+            builder.RegisterType<ConditionsWeatherImplementation>().As<IWeatherImplementation>().SingleInstance();
         }
         else
         {
