@@ -6,7 +6,7 @@ using AssettoServer.Server.Configuration;
 using AssettoServer.Server.TrackParams;
 using AssettoServer.Server.Weather.Implementation;
 using AssettoServer.Shared.Weather;
-using AssettoServer.Utils;
+using Microsoft.Extensions.Hosting;
 using NodaTime;
 using NodaTime.Extensions;
 using Serilog;
@@ -15,7 +15,7 @@ using SunCalcNet.Model;
 
 namespace AssettoServer.Server.Weather;
 
-public class WeatherManager : BackgroundLifecycleService
+public class WeatherManager : BackgroundService, IHostedLifecycleService
 {
     private readonly ACServerConfiguration _configuration;
     private readonly IWeatherImplementation _weatherImplementation;
@@ -89,7 +89,7 @@ public class WeatherManager : BackgroundLifecycleService
     {
         if (TrackParams != null)
         {
-            CurrentSunPosition = SunCalc.GetSunPosition(CurrentDateTime.ToDateTimeOffset(), TrackParams.Latitude, TrackParams.Longitude);
+            CurrentSunPosition = SunCalc.GetSunPosition(CurrentDateTime.ToDateTimeUtc(), TrackParams.Latitude, TrackParams.Longitude);
         }
     }
     
@@ -186,7 +186,9 @@ public class WeatherManager : BackgroundLifecycleService
         }
     }
 
-    public override async Task StartingAsync(CancellationToken cancellationToken)
+    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public async Task StartingAsync(CancellationToken cancellationToken)
     {
         await _trackParamsProvider.InitializeAsync();
         TrackParams = _trackParamsProvider.GetParamsForTrack(_configuration.Server.Track);
@@ -231,4 +233,8 @@ public class WeatherManager : BackgroundLifecycleService
         if (!SetWeatherConfiguration(Random.Shared.Next(_configuration.Server.Weathers.Count)))
             throw new InvalidOperationException("Could not set initial weather configuration");
     }
+
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

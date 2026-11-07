@@ -16,8 +16,6 @@ public class MutableAiSpline
     public List<SplineJunction> Junctions { get; } = [];
     public KDTree<int> KdTree { get; }
     public List<int[]> Lanes { get; }
-    public float LaneWidthMeters { get; }
-    public bool TwoWayTraffic { get; }
 
     private readonly ILogger _logger;
 
@@ -25,8 +23,6 @@ public class MutableAiSpline
     {
         _logger = logger ?? Log.Logger;
         Splines = splines;
-        LaneWidthMeters = laneWidth;
-        TwoWayTraffic = twoWayTraffic;
 
         int total = splines.Values.Sum(s => s.Points.Length);
         Points = new SplinePoint[total];

@@ -55,12 +55,9 @@ public class Startup
         builder.RegisterInstance(_configuration);
         builder.RegisterInstance(_loader);
         
-        // Services are started sequentially, some services depend on others so order is important
-        builder.RegisterType<EntryCarManager>().AsSelf().As<IHostedService>().SingleInstance();     
-        builder.RegisterType<ChecksumManager>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<SessionManager>().AsSelf().As<IHostedService>().SingleInstance();
-        builder.RegisterType<GeoParamsManager>().AsSelf().As<IHostedService>().SingleInstance();
+        // Registration order == order in which hosted services are started
         builder.RegisterType<ACServer>().AsSelf().As<IHostedService>().SingleInstance();
+        builder.RegisterType<SessionManager>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ACTcpServer>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterType<ACUdpServer>().AsSelf().As<IHostedService>().SingleInstance();
         builder.RegisterModule(new WeatherModule(_configuration));
@@ -103,7 +100,10 @@ public class Startup
         builder.RegisterType<CSPClientMessageTypeManager>().AsSelf().SingleInstance();
         builder.RegisterType<CSPClientMessageHandler>().AsSelf().SingleInstance();
         builder.RegisterType<VoteManager>().AsSelf().SingleInstance();
+        builder.RegisterType<EntryCarManager>().AsSelf().SingleInstance();
         builder.RegisterType<IpApiGeoParamsProvider>().As<IGeoParamsProvider>();
+        builder.RegisterType<GeoParamsManager>().AsSelf().SingleInstance();
+        builder.RegisterType<ChecksumManager>().AsSelf().SingleInstance();
         builder.RegisterType<CSPServerExtraOptions>().AsSelf().SingleInstance();
         builder.RegisterType<OpenSlotFilterChain>().AsSelf().SingleInstance();
         builder.RegisterType<WhitelistSlotFilter>().As<IOpenSlotFilter>();
@@ -134,7 +134,8 @@ public class Startup
         {
             if (_configuration.Extra.UseSteamAuth)
             {
-                builder.RegisterType<SteamService>().AsSelf().As<IHostedService>().SingleInstance();
+                builder.RegisterType<NativeSteam>().As<IHostedService>().As<ISteam>().SingleInstance();
+                builder.RegisterType<SteamManager>().AsSelf().SingleInstance().AutoActivate();
                 builder.RegisterType<SteamSlotFilter>().As<IOpenSlotFilter>();
             }
         }
@@ -174,13 +175,16 @@ public class Startup
             .AddScheme<ACClientAuthenticationSchemeOptions, ACClientAuthenticationHandler>(
                 ACClientAuthenticationSchemeOptions.Scheme, _ => { });
         services.AddAuthorization();
-        
-        var mvcBuilder = services.AddControllers();
-        
-        mvcBuilder.AddJsonOptions(options =>
+        services.AddControllers().AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, JsonSourceGenerationContext.Default);
         });
+        services.AddControllers(options =>
+        {
+            options.OutputFormatters.Add(new LuaOutputFormatter());
+        });
+        
+        var mvcBuilder = services.AddControllers();
 
         if (_configuration.Extra.EnablePlugins != null)
         {

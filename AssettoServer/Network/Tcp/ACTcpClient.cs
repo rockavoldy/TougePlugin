@@ -915,7 +915,7 @@ public class ACTcpClient : IClient
                     await Task.Delay(TimeSpan.FromSeconds(_configuration.Extra.PlayerChecksumTimeoutSeconds));
                     if (ChecksumStatus != ChecksumStatus.Succeeded && IsConnected)
                     {
-                        Logger.Information("Checksum request for {ClientName} ({SessionId}) timed out. Consider increasing PlayerChecksumTimeoutSeconds", Name, SessionId);
+                        Log.Information("Checksum request for {ClientName} ({SessionId}) timed out. Consider increasing PlayerChecksumTimeoutSeconds", Name, SessionId);
                         await _entryCarManager.KickAsync(this, KickReason.ChecksumFailed, null, null, $"{Name} did not send the requested checksums.");
                     }
                 });
@@ -926,7 +926,7 @@ public class ACTcpClient : IClient
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error sending first update to {ClientName}", Name);
+            Log.Error(ex, "Error sending first update to {ClientName}", Name);
         }
     }
 
@@ -1041,6 +1041,6 @@ public class ACTcpClient : IClient
     {
         // https://developer.valvesoftware.com/wiki/SteamID
         // Changing most significant bit so there are no collisions with real Steam IDs
-        return XxHash3.HashToUInt64(Encoding.UTF8.GetBytes(input)) | (ulong)1 << 63;
+        return XxHash64.HashToUInt64(Encoding.UTF8.GetBytes(input)) | (ulong)1 << 63;
     }
 }

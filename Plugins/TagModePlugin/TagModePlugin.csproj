@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-    <ItemGroup>
-        <None Remove="lua\tagmode.lua" />
-        <EmbeddedResource Include="lua\tagmode.lua" />
-    </ItemGroup>
-
-</Project>
