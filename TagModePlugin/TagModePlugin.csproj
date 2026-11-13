@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\Plugin.props" />
+
+    <ItemGroup>
+        <None Remove="lua\tagmode.lua" />
+        <EmbeddedResource Include="lua\tagmode.lua" />
+    </ItemGroup>
+
+</Project>

@@ -29,7 +29,7 @@ local function getConfiguration()
     web.get(configUrl, authHeaders, function (err, response)
         if response.status == 200 then
             ac.log("config loaded")
-            configuration = JSON.parse(response.body)
+            configuration = stringify.parse(response.body)
             configurationLoading = false
         end
     end)
@@ -43,7 +43,7 @@ local function setValue(key, value)
         if response.status ~= 200 then
             ui.toast(ui.Icons.Ban, "Error updating " .. key .. " (" .. response.status .. ")")
         else
-            local parsed = JSON.parse(response.body)
+            local parsed = stringify.parse(response.body)
             if parsed.Status ~= "OK" then
                 ui.toast(ui.Icons.Ban, "Error updating " .. key .. " (" .. parsed.ErrorMessage .. ")")
             else

@@ -199,14 +199,14 @@ public class AiBehavior : BackgroundService
         if (_sessionManager.CurrentSession.StartTimeMilliseconds > _sessionManager.ServerTimeMilliseconds)
             return;
 
-        foreach (var aiState in _initializedAiStates)
+        for (int i = 0; i < _initializedAiStates.Count; i++)
         {
-            _aiMinDistanceToPlayer.Add(new KeyValuePair<AiState, float>(aiState, float.MaxValue));
+            _aiMinDistanceToPlayer.Add(new KeyValuePair<AiState, float>(_initializedAiStates[i], float.MaxValue));
         }
 
-        foreach (var playerCar in _playerCars)
+        for (int i = 0; i < _playerCars.Count; i++)
         {
-            _playerMinDistanceToAi.Add(new KeyValuePair<EntryCar, float>(playerCar, float.MaxValue));
+            _playerMinDistanceToAi.Add(new KeyValuePair<EntryCar, float>(_playerCars[i], float.MaxValue));
         }
 
         // Get minimum distance to a player for each AI
@@ -257,9 +257,9 @@ public class AiBehavior : BackgroundService
             _playerCars.Clear();
             // Order player cars by their minimum distance to an AI. Higher distance = higher chance for next AI spawn
             _playerMinDistanceToAi.Sort((a, b) => b.Value.CompareTo(a.Value));
-            foreach (var dist in _playerMinDistanceToAi)
+            for (int i = 0; i < _playerMinDistanceToAi.Count; i++)
             {
-                _playerCars.Add(dist.Key);
+                _playerCars.Add(_playerMinDistanceToAi[i].Key);
             }
         }
 
@@ -349,9 +349,9 @@ public class AiBehavior : BackgroundService
 
     private void OnSessionChanged(SessionManager sender, SessionChangedEventArgs args)
     {
-        foreach (var car in _entryCarManager.EntryCars)
+        for (var i = 0; i < _initializedAiStates.Count; i++)
         {
-            car.AiReset();
+            _initializedAiStates[i].Despawn();
         }
     }
 
@@ -379,8 +379,9 @@ public class AiBehavior : BackgroundService
     {
         var ops = _spline.Operations;
 
-        foreach (var entryCar in _entryCarManager.EntryCars)
+        for (var i = 0; i < _entryCarManager.EntryCars.Length; i++)
         {
+            var entryCar = _entryCarManager.EntryCars[i];
             if (entryCar.AiControlled && !entryCar.IsPositionSafe(pointId))
             {
                 return false;

@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using AssettoServer.Server.Configuration;
-using AssettoServer.Utils;
 using Serilog;
 
 namespace AssettoServer.Server.GeoParams;
 
-public class GeoParamsManager : HostedLifecycleService
+public class GeoParamsManager
 {
     private readonly IGeoParamsProvider _geoParamsProvider;
     private readonly ACServerConfiguration _configuration;
@@ -20,7 +18,7 @@ public class GeoParamsManager : HostedLifecycleService
         _configuration = configuration;
     }
 
-    public override async Task StartingAsync(CancellationToken cancellationToken)
+    public async Task InitializeAsync()
     {
         try
         {

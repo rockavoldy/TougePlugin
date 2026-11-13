@@ -12,9 +12,9 @@ using Supercluster.KDTree;
 
 namespace AssettoServer.Server.Ai.Splines;
 
-public sealed class AiSpline : IDisposable
+public class AiSpline : IDisposable
 {
-    public const int SupportedVersion = 2;
+    public const int SupportedVersion = 1;
     
     private readonly MemoryMappedFile _file;
     private readonly IMappedMemory _fileAccessor;
@@ -23,12 +23,12 @@ public sealed class AiSpline : IDisposable
     private readonly IMemoryOwner<Vector3> _treePointsOwner;
     private readonly IMemoryOwner<int> _treeNodesOwner;
     private readonly nint _lanesOffset;
-    private readonly AiSplineHeader _header;
-    private readonly KDTree<int> _kdTree;
-    
-    public ReadOnlySpan<SplinePoint> Points => _pointsPointer.AsSpan(_header.NumPoints);
-    public ReadOnlySpan<SplineJunction> Junctions => _junctionsPointer.AsSpan(_header.NumJunctions);
+
+    public AiSplineHeader Header { get; }
+    public ReadOnlySpan<SplinePoint> Points => _pointsPointer.AsSpan(Header.NumPoints);
+    public ReadOnlySpan<SplineJunction> Junctions => _junctionsPointer.AsSpan(Header.NumJunctions);
     public SlowestAiStates SlowestAiStates { get; }
+    public KDTree<int> KdTree { get; }
     public SplinePointOperations Operations => new(Points);
     
     public AiSpline(string path)
@@ -41,37 +41,37 @@ public sealed class AiSpline : IDisposable
         
         nint offset = 0;
         
-        _header = MemoryMarshal.Read<AiSplineHeader>(_fileAccessor.Bytes);
+        Header = MemoryMarshal.Read<AiSplineHeader>(_fileAccessor.Bytes);
         offset += Marshal.SizeOf<AiSplineHeader>();
 
-        if (_header.Version != SupportedVersion)
+        if (Header.Version != SupportedVersion)
         {
             throw new InvalidOperationException("Unsupported AI cache file version");
         }
 
         _pointsPointer = new Pointer<SplinePoint>(_fileAccessor.Pointer.Address + offset);
-        offset += Marshal.SizeOf<SplinePoint>() * _header.NumPoints;
+        offset += Marshal.SizeOf<SplinePoint>() * Header.NumPoints;
         
         _junctionsPointer = new Pointer<SplineJunction>(_fileAccessor.Pointer.Address + offset);
-        offset += Marshal.SizeOf<SplineJunction>() * _header.NumJunctions;
+        offset += Marshal.SizeOf<SplineJunction>() * Header.NumJunctions;
         
-        _treePointsOwner = new Pointer<Vector3>(_fileAccessor.Pointer.Address + offset).ToMemoryOwner(_header.NumKdTreePoints);
-        offset += Marshal.SizeOf<Vector3>() * _header.NumKdTreePoints;
+        _treePointsOwner = new Pointer<Vector3>(_fileAccessor.Pointer.Address + offset).ToMemoryOwner(Header.NumKdTreePoints);
+        offset += Marshal.SizeOf<Vector3>() * Header.NumKdTreePoints;
         
-        _treeNodesOwner = new Pointer<int>(_fileAccessor.Pointer.Address + offset).ToMemoryOwner(_header.NumKdTreePoints);
-        offset += Marshal.SizeOf<int>() * _header.NumKdTreePoints;
+        _treeNodesOwner = new Pointer<int>(_fileAccessor.Pointer.Address + offset).ToMemoryOwner(Header.NumKdTreePoints);
+        offset += Marshal.SizeOf<int>() * Header.NumKdTreePoints;
 
         _lanesOffset = offset;
         
-        _kdTree = new KDTree<int>(_treePointsOwner.Memory, _treeNodesOwner.Memory, _header.NumPoints);
-        SlowestAiStates = new SlowestAiStates(_header.NumPoints);
+        KdTree = new KDTree<int>(_treePointsOwner.Memory, _treeNodesOwner.Memory, Header.NumPoints);
+        SlowestAiStates = new SlowestAiStates(Header.NumPoints);
     }
 
     public ReadOnlySpan<int> GetLanes(int pointId)
     {
-        if (pointId < 0) return [];
+        if (pointId < 0) return ReadOnlySpan<int>.Empty;
         var lanesId = Points[pointId].LanesId;
-        if (lanesId < 0) return [];
+        if (lanesId < 0) return ReadOnlySpan<int>.Empty;
         var offset = _fileAccessor.Pointer.Address + _lanesOffset + lanesId;
         var count = new Pointer<int>(offset).Value;
         return new Pointer<int>(offset + sizeof(int)).AsSpan(count);
@@ -79,7 +79,7 @@ public sealed class AiSpline : IDisposable
     
     public (int PointId, float DistanceSquared) WorldToSpline(Vector3 position)
     {
-        var nearest = _kdTree.NearestNeighbor(position);
+        var nearest = KdTree.NearestNeighbor(position);
         if (nearest == null)
         {
             return (-1, float.PositiveInfinity);

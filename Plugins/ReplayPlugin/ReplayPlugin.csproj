@@ -1,8 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-    
-    <ItemGroup>
-        <None Remove="lua\replay.lua" />
-        <EmbeddedResource Include="lua\replay.lua" />
-    </ItemGroup>
-
-</Project>

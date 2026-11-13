@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\Plugin.props" />
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.4" />
+      <PackageReference Include="Npgsql" Version="9.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Includes the parts of split scripts, such as lua\hud\*.lua. -->
+        <None Update="lua\**\*.lua;lua\**\parts.txt">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <!-- HUD assets served to clients. Listed explicitly because the shared
+         Plugin.props wwwroot glob does not resolve for this project. -->
+    <ItemGroup>
+        <None Update="wwwroot\**\*">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>

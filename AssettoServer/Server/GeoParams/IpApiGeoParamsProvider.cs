@@ -1,7 +1,7 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text.Json;
+﻿using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace AssettoServer.Server.GeoParams;
 
@@ -18,23 +18,19 @@ public class IpApiGeoParamsProvider : IGeoParamsProvider
     {
         var response = await _httpClient.GetAsync("http://ip-api.com/json");
 
-        if (!response.IsSuccessStatusCode) return null;
-        
-        var json = await response.Content.ReadFromJsonAsync<IpApiResponse>() ?? throw new JsonException("Cannot deserialize ip-api.com response");
-        return new GeoParams
+        if (response.IsSuccessStatusCode)
         {
-            Ip = json.Query,
-            City = json.City,
-            Country = json.Country,
-            CountryCode = json.CountryCode
-        };
-    }
+            string jsonString = await response.Content.ReadAsStringAsync();
+            Dictionary<string, string> json = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString) ?? throw new JsonException("Cannot deserialize ip-api.com response");
+            return new GeoParams
+            {
+                Ip = json["query"],
+                City = json["city"],
+                Country = json["country"],
+                CountryCode = json["countryCode"]
+            };
+        }
 
-    private class IpApiResponse
-    {
-        public required string Query { get; init; }
-        public required string City { get; init; }
-        public required string Country { get; init; }
-        public required string CountryCode { get; init; }
+        return null;
     }
 }
