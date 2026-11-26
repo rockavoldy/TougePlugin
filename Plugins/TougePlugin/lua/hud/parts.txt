@@ -1,0 +1,19 @@
+# Parts of hud.lua, joined in this order by Touge.ProvideScript. A part must come after
+# every part whose locals it uses. Files not listed here are ignored.
+00_config.lua
+01_scaling.lua
+02_state.lua
+03_assets.lua
+04_layout.lua
+05_util.lua
+06_shell.lua
+07_tween.lua
+10_events.lua
+15_race.lua
+21_challenge.lua
+23_draw_cluster.lua
+24_draw_panel.lua
+25_draw_popups.lua
+30_input.lua
+80_mock.lua
+99_main.lua

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+        <PackageReference Include="Npgsql" />
+    </ItemGroup>
+
+    <!-- Touge loads its Lua from disk (split-script "hud.lua" + parts.txt mechanism),
+         so it is copied to the plugin output like FastTravelPlugin's lua/fasttravel.lua. -->
+    <ItemGroup>
+        <None Update="lua\**\*.lua;lua\**\parts.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>

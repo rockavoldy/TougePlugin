@@ -18,6 +18,7 @@
   <Project Path="Plugins\SamplePlugin\SamplePlugin.csproj" />
   <Project Path="Plugins\TagModePlugin\TagModePlugin.csproj" />
   <Project Path="Plugins\TimeDilationPlugin\TimeDilationPlugin.csproj" />
+  <Project Path="Plugins\TougePlugin\TougePlugin.csproj" />
   <Project Path="Plugins\VotingPresetPlugin\VotingPresetPlugin.csproj" />
   <Project Path="Plugins\VotingWeatherPlugin\VotingWeatherPlugin.csproj" />
   <Project Path="Plugins\WordFilterPlugin\WordFilterPlugin.csproj" />
