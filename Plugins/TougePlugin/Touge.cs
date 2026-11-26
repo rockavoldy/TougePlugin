@@ -3,7 +3,6 @@ using AssettoServer.Server;
 using AssettoServer.Server.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using System.Reflection;
 using TougePlugin.Database;
 using TougePlugin.Models;
 using TougePlugin.Packets;
@@ -51,10 +50,10 @@ public class Touge : BackgroundService, IHostedService
 
         CheckConfiguration();
 
-        // Provide lua scripts
-        ProvideScript("teleport.lua");
-        ProvideScript("hud.lua");
-        ProvideScript("timing.lua");
+        // Provide lua scripts (embedded under Embedded/Lua/, see EmbeddedResourceAccessGenerator)
+        _scriptProvider.AddScript(EmbeddedResources.Lua.Teleport.Lua.GetStream(), "teleport.lua");
+        _scriptProvider.AddScript(EmbeddedResources.Lua.Hud.Lua.GetStream(), "hud.lua");
+        _scriptProvider.AddScript(EmbeddedResources.Lua.Timing.Lua.GetStream(), "timing.lua");
 
         // Set up database connection
         if (_configuration.IsDbLocalMode)
@@ -155,33 +154,6 @@ public class Touge : BackgroundService, IHostedService
             Log.Debug("[Touge] Disconnected client session state: {ClientName} ({SessionId}) HasCurrentSession={HasCurrentSession} ActiveRace={HasActiveRace}",
                 client.Name, client.SessionId, tougeSession != null, tougeSession?.ActiveRace != null);
         }
-    }
-
-    private void ProvideScript(string scriptName)
-    {
-        string luaDirectory = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "lua");
-
-        // A script can be split into parts in a folder named after it (lua/hud/ for hud.lua).
-        // The parts listed in its parts.txt are joined in that order into a single chunk, so
-        // locals declared in an earlier part are visible in later ones, exactly as in one file.
-        // Only listed files are read, so parts left over from an older install are ignored.
-        string partsDirectory = Path.Join(luaDirectory, Path.GetFileNameWithoutExtension(scriptName));
-        string manifestPath = Path.Join(partsDirectory, "parts.txt");
-        string script;
-        if (File.Exists(manifestPath))
-        {
-            var parts = File.ReadAllLines(manifestPath)
-                .Select(line => line.Trim())
-                .Where(line => line.Length > 0 && !line.StartsWith('#'))
-                .Select(name => $"-- ==== {name} ====\n{File.ReadAllText(Path.Join(partsDirectory, name))}");
-            script = string.Join("\n", parts);
-        }
-        else
-        {
-            script = File.ReadAllText(Path.Join(luaDirectory, scriptName));
-        }
-
-        _scriptProvider.AddScript(script, scriptName);
     }
 
     private async void OnInitializationPacket(ACTcpClient client, InitializationPacket packet)

@@ -80,10 +80,9 @@ the Lua scripts under `lua/` are the reference client implementation of that con
 1. **Config sanity check** — `CheckConfiguration()` throws unless:
    - `extra_cfg.yml` has `EnableClientMessages = true`
    - `extra_cfg.yml` has `MinimumCSPVersion >= 1937`
-2. **Provide Lua scripts** — reads and registers `teleport.lua`, `hud.lua`, `timing.lua`
-   with the server's `CSPServerScriptProvider`, so they are pushed to every
-   client automatically. A script can be split into parts in a folder named after it
-   (`lua/hud/` for `hud.lua`); the parts listed in its `parts.txt` are joined in that order into one script.
+2. **Provide Lua scripts** — registers the embedded `teleport.lua`, `hud.lua` and
+   `timing.lua` (under `Embedded/Lua/`) with the server's `CSPServerScriptProvider`,
+   so they are pushed to every client automatically.
 3. **Database setup** —
    - `IsDbLocalMode == true` → `SqliteConnectionFactory("plugins/TougePlugin/database.db")`
    - otherwise → `PostgresConnectionFactory(PostgresqlConnectionString)`
@@ -432,7 +431,7 @@ All packets are `OnlineEvent` messages. Direction legend:
 
 | Script | Key responsibilities |
 |--------|----------------------|
-| `hud.lua` | Full HUD in an Initial D Arcade Stage 6 style with a dark theme: Elo card, the Touge menu (CHALLENGE tab with nearby drivers, their cars, course and race type; PROFILE; HOW TO PLAY), incoming challenge, notification and forfeit popups, countdown, and the in-race cluster (time advantage, race positions, round results). Keybindings: `I` menu, `N` challenge the nearest driver, `M` accept, `H` hide the menu hint, `F` hold to forfeit. Loads fonts, art and UI sounds (`sounds.zip`, one WAV per slot in `soundSlots`) from `/static/TougePlugin/`. Split into parts under `lua/hud/`: config, scaling, state, asset manifest, layout tables, utilities, shell and tween helpers, event handlers, race tracking, draw code, input, and a debug mock panel (enabled with `debugHud` in `00_config.lua`). |
+| `hud.lua` | Full HUD in an Initial D Arcade Stage 6 style with a dark theme: Elo card, the Touge menu (CHALLENGE tab with nearby drivers, their cars, course and race type; PROFILE; HOW TO PLAY), incoming challenge, notification and forfeit popups, countdown, and the in-race cluster (time advantage, race positions, round results). Keybindings: `I` menu, `N` challenge the nearest driver, `M` accept, `H` hide the menu hint, `F` hold to forfeit. Loads fonts, art and UI sounds (`sounds.zip`, one WAV per slot in `soundSlots`) from `/static/TougePlugin/`. Organized into `-- ==== section ====` markers (config, scaling, state, asset manifest, layout tables, utilities, shell and tween helpers, event handlers, race tracking, draw code, input, and a debug mock panel enabled with `debugHud` in the `config` section). |
 | `teleport.lua` | Handles `AS_Teleport`: raycasts down to ground level, briefly disables collisions, locks controls 10 s, then `physics.setCarPosition`. Also implements `AS_LockControls`. |
 | `timing.lua` | Tracks `AS_FinishLine` points; on `AS_Finish { lookForFinish }` enables finish watching; per-frame segment-intersection test against the 2D line, sends `AS_Finish` up once crossed; reads `UseTrackFinish` from `AS_Initialization`. |
 
