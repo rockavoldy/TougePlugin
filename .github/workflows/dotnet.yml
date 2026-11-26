@@ -47,7 +47,8 @@ jobs:
             esac
 
             test -f "out-$rid/plugins/TougePlugin/TougePlugin.dll"
-            test -d "out-$rid/plugins/TougePlugin/lua"
+            # Lua is embedded in the DLL (Embedded/Lua/**), not shipped as a folder.
+            grep -aq "TougePlugin.Embedded.Lua.hud.lua" "out-$rid/plugins/TougePlugin/TougePlugin.dll"
             test -d "out-$rid/plugins/TougePlugin/wwwroot"
             test ! -f "out-$rid/plugins/TougePlugin/AssettoServer.dll"
             test ! -f "out-$rid/plugins/TougePlugin/AssettoServer.Shared.dll"
